@@ -5,7 +5,7 @@ import { Eye, EyeOff, Mail, Lock, User, Phone, Zap, Building2 } from 'lucide-rea
 import { useToast } from '../../components/ui/Toast';
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '', role: 'consumer', agree: false });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', password: '', confirm: '', role: 'consumer', agree: false });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -19,6 +19,7 @@ export default function RegisterPage() {
     if (!form.name.trim()) e.name = 'Name is required';
     if (!form.email) e.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
+    if (form.role === 'business_owner' && !form.company.trim()) e.company = 'Company name is required';
     if (!form.password || form.password.length < 8) e.password = 'Minimum 8 characters';
     if (form.password !== form.confirm) e.confirm = 'Passwords do not match';
     if (!form.agree) e.agree = 'You must accept the terms';
@@ -28,12 +29,44 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
+
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    showToast('Account created! Welcome to AIBizOS!', 'success', 'Registration Successful');
-    navigate('/login');
-    setLoading(false);
+    setErrors({});
+
+    try {
+      const response = await fetch('http://localhost:5000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          company: form.company,
+          password: form.password,
+          role: form.role
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        showToast(data.message || 'Registration failed', 'error', 'Error');
+        return;
+      }
+
+      showToast('Account created! Welcome to AIBizOS!', 'success', 'Registration Successful');
+      navigate('/login');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Unable to reach the server', 'error', 'Connection Error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,6 +77,7 @@ export default function RegisterPage() {
             <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
+
             <span className="font-bold text-slate-800 text-lg">AI<span className="text-blue-600">Biz</span>OS</span>
           </Link>
           <Link to="/login" className="text-sm text-blue-600 font-semibold hover:underline">Sign in</Link>
@@ -97,6 +131,18 @@ export default function RegisterPage() {
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
+
+          {form.role === 'business_owner' && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Company Name</label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input value={form.company} onChange={e => update('company', e.target.value)} placeholder="Acme Inc."
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.company ? 'border-red-400' : 'border-slate-200'}`} />
+              </div>
+              {errors.company && <p className="text-red-500 text-xs mt-1">{errors.company}</p>}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>

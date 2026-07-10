@@ -4,11 +4,10 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, Zap, ArrowRight } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useToast } from '../../components/ui/Toast';
-import { mockUser } from '../../data/mockData';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('alex.johnson@example.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -30,11 +29,31 @@ export default function LoginPage() {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1000));
-    dispatch({ type: 'LOGIN', payload: mockUser });
-    showToast('Welcome back, Alex!', 'success', 'Login Successful');
-    navigate('/dashboard');
-    setLoading(false);
+
+    try {
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        dispatch({ type: 'LOGIN', payload: data.user });
+        showToast(`Welcome back, ${data.user.name}!`, 'success', 'Login Successful');
+        navigate('/dashboard');
+      } else {
+        setErrors({ password: data.message || 'Invalid email or password' });
+        showToast(data.message || 'Invalid email or password', 'error', 'Login Failed');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Something went wrong. Try again.', 'error', 'Server Error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
