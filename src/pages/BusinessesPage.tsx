@@ -1,116 +1,293 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Search, Shield, MapPin, Star, Filter } from 'lucide-react';
-import PublicLayout from '../components/layout/PublicLayout';
-import StarRating from '../components/ui/StarRating';
-import Pagination from '../components/ui/Pagination';
-import { businesses, categories } from '../data/mockData';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowRight,
+  Lock,
+  Eye,
+  EyeOff,
+  X
+} from "lucide-react";
+
+import PublicLayout from "../components/layout/PublicLayout";
+
+interface Company {
+  id: number;
+  name: string;
+  logo: string;
+  workspace: string;
+}
+
+const companies: Company[] = [
+  {
+    id: 1,
+    name: "Infosys",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg",
+    workspace: "infosys",
+  },
+  {
+    id: 2,
+    name: "TCS",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/b/b1/Tata_Consultancy_Services_Logo.svg",
+    workspace: "tcs",
+  },
+  {
+    id: 3,
+    name: "Reliance Retail",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Reliance_Retail_Logo.png",
+    workspace: "reliance-retail",
+  },
+  {
+    id: 4,
+    name: "Decathlon India",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/1/16/Decathlon_Logo.svg",
+    workspace: "decathlon-india",
+  },
+  {
+    id: 5,
+    name: "Zomato",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/7/75/Zomato_logo.png",
+    workspace: "zomato",
+  },
+];
 
 export default function BusinessesPage() {
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('featured');
-  const [page, setPage] = useState(1);
-  const ITEMS = 8;
+  const navigate = useNavigate();
 
-  const filtered = businesses.filter(b => {
-    if (search && !b.name.toLowerCase().includes(search.toLowerCase()) && !b.category.toLowerCase().includes(search.toLowerCase())) return false;
-    if (selectedCategory && b.categoryId !== selectedCategory) return false;
-    return true;
-  }).sort((a, b) => {
-    if (sortBy === 'rating') return b.rating - a.rating;
-    if (sortBy === 'reviews') return b.reviewCount - a.reviewCount;
-    return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
-  });
+  const [selectedCompany, setSelectedCompany] =
+    useState<Company | null>(null);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS);
-  const paged = filtered.slice((page - 1) * ITEMS, page * ITEMS);
+  const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [error, setError] = useState("");
+
+  const openWorkspace = (company: Company) => {
+    setSelectedCompany(company);
+    setPassword("");
+    setError("");
+  };
+
+  const closeModal = () => {
+    setSelectedCompany(null);
+    setPassword("");
+    setError("");
+  };
+
+  const login = () => {
+  if (!password.trim()) {
+    setError("Please enter your password");
+    return;
+  }
+
+  navigate(
+    `/businesses/${selectedCompany?.workspace}/dashboard`,
+    {
+      state: {
+        company: selectedCompany,
+      },
+    }
+  );
+};
 
   return (
     <PublicLayout>
-      <div className="pt-20 min-h-screen bg-slate-50">
-        {/* Hero */}
-        <div className="bg-gradient-to-br from-slate-900 to-blue-950 py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="text-4xl font-black text-white mb-3">Discover Amazing Businesses</h1>
-            <p className="text-slate-400 text-lg mb-8">Find verified businesses across all categories</p>
-            <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search businesses..."
-                className="w-full pl-12 pr-4 py-4 bg-white rounded-2xl text-slate-800 placeholder:text-slate-400 focus:outline-none shadow-xl text-sm" />
-            </div>
+      <div className="min-h-screen bg-slate-950 text-white">
+
+        {/* Header */}
+
+        <div className="border-b border-slate-800">
+
+          <div className="max-w-7xl mx-auto px-6 py-14">
+
+            <motion.h1
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-5xl font-black"
+            >
+              Business Workspaces
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-slate-400 mt-4 text-lg"
+            >
+              Choose a company and securely enter its AI workspace.
+            </motion.p>
+
           </div>
+
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              <button onClick={() => { setSelectedCategory(''); setPage(1); }}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${!selectedCategory ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
-                All
-              </button>
-              {categories.slice(0, 6).map(c => (
-                <button key={c.id} onClick={() => { setSelectedCategory(c.id); setPage(1); }}
-                  className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedCategory === c.id ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`}>
-                  {c.icon} {c.name}
+        <div className="max-w-6xl mx-auto px-6 py-12">
+
+          {/* Company List Starts Here */}
+                    <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900">
+
+            {companies.map((company, index) => (
+
+              <motion.div
+                key={company.id}
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.08 }}
+                whileHover={{
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                }}
+                className={`flex flex-col md:flex-row md:items-center md:justify-between px-6 py-6 transition-all ${
+                  index !== companies.length - 1
+                    ? "border-b border-slate-800"
+                    : ""
+                }`}
+              >
+                <div className="flex items-center gap-5">
+
+                  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2">
+                    <img
+                      src={company.logo}
+                      alt={company.name}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
+
+                  <div>
+
+                    <h2 className="text-2xl font-semibold">
+                      {company.name}
+                    </h2>
+
+                    <p className="text-slate-400 mt-1">
+                      Secure AI Business Workspace
+                    </p>
+
+                  </div>
+
+                </div>
+
+                <button
+                  onClick={() => openWorkspace(company)}
+                  className="mt-5 md:mt-0 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold transition-all"
+                >
+                  Open Workspace
+                  <ArrowRight size={18} />
                 </button>
-              ))}
-            </div>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              className="sm:ml-auto border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-slate-700 flex-shrink-0">
-              <option value="featured">Featured</option>
-              <option value="rating">Top Rated</option>
-              <option value="reviews">Most Reviews</option>
-            </select>
-          </div>
 
-          <p className="text-slate-500 text-sm mb-6">{filtered.length} businesses found</p>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {paged.map((biz, i) => (
-              <motion.div key={biz.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-                <Link to={`/businesses/${biz.id}`} className="group block bg-white rounded-2xl overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="relative h-36 overflow-hidden">
-                    <img src={biz.coverImage} alt={biz.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    {biz.verified && (
-                      <span className="absolute top-3 right-3 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                        <Shield className="w-3 h-3" /> Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <div className="flex gap-3 mb-3">
-                      <img src={biz.logo} alt="" className="w-10 h-10 rounded-xl object-cover border border-slate-100 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800 text-sm truncate group-hover:text-blue-600 transition-colors">{biz.name}</h3>
-                        <span className="text-xs text-slate-500">{biz.category}</span>
-                      </div>
-                    </div>
-                    <StarRating rating={biz.rating} showValue reviewCount={biz.reviewCount} size="sm" />
-                    <p className="text-slate-500 text-xs mt-2 line-clamp-2 leading-relaxed">{biz.description}</p>
-                    <div className="flex items-center gap-1 mt-3 text-slate-400 text-xs">
-                      <MapPin className="w-3 h-3" /> {biz.location}
-                    </div>
-                  </div>
-                </Link>
               </motion.div>
+
             ))}
+
           </div>
 
-          {filtered.length === 0 && (
-            <div className="text-center py-16 bg-white rounded-2xl border border-slate-100">
-              <p className="text-slate-600 font-semibold">No businesses found</p>
-            </div>
+        </div>
+
+        {/* Login Modal */}
+
+        <AnimatePresence>
+
+          {selectedCompany && (
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-5"
+            >
+
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden"
+              >
+
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+
+                  <h2 className="text-xl font-bold">
+                    {selectedCompany.name}
+                  </h2>
+
+                  <button
+                    onClick={closeModal}
+                    className="text-slate-400 hover:text-white transition"
+                  >
+                    <X size={22} />
+                  </button>
+
+                </div>
+
+                <div className="p-6">
+
+                  <p className="text-slate-400 mb-6">
+                    Enter your workspace password.
+                  </p>
+                                    <div className="relative">
+
+                    <Lock
+                      size={18}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Workspace Password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError("");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          login();
+                        }
+                      }}
+                      className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-12 pr-12 text-white outline-none focus:border-blue-500"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword(!showPassword)
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      {showPassword ? (
+                        <EyeOff size={18} />
+                      ) : (
+                        <Eye size={18} />
+                      )}
+                    </button>
+
+                  </div>
+
+                  {error && (
+                    <p className="text-red-400 text-sm mt-3">
+                      {error}
+                    </p>
+                  )}
+
+                  <button
+                    onClick={login}
+                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 transition rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
+                  >
+                    Open Workspace
+                    <ArrowRight size={18} />
+                  </button>
+
+                </div>
+
+              </motion.div>
+
+            </motion.div>
+
           )}
 
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-8">
-              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
-            </div>
-          )}
-        </div>
+        </AnimatePresence>
+
       </div>
     </PublicLayout>
   );

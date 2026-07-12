@@ -1,7 +1,7 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from 'framer-motion';
-import { Users, Building2, Package, DollarSign, Star, Tag, ShoppingBag, Activity, TrendingUp, CheckCircle, XCircle } from 'lucide-react';
+import { Users, Building2, Package, DollarSign, Star, Tag, ShoppingBag, Activity, TrendingUp, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis } from 'recharts';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { StatCard } from '../../components/ui/Card';
@@ -9,6 +9,7 @@ import Badge from '../../components/ui/Badge';
 import { businesses, revenueData, userGrowthData, ordersData } from '../../data/mockData';
 
 export default function AdminDashboard() {
+    const navigate = useNavigate();
   const pendingApprovals = businesses.filter(b => !b.verified).slice(0, 3);
 
   return (
@@ -27,8 +28,13 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Users" value="58,290" change={24} icon={<Users className="w-5 h-5" />} color="blue" />
-        <StatCard label="Businesses" value="12,500" change={8} icon={<Building2 className="w-5 h-5" />} color="green" />
+      <div onClick={() => navigate("/businesses")} className="cursor-pointer hover:scale-105 transition-transform">
+
+        <StatCard label="Total Businesses" value="5" change={12} icon={<Building2 className="w-5 h-5" />} color="green" />
+</div>
+
+        <StatCard label="Total Consumers" value="2,486" change={18} icon={<Users className="w-5 h-5" />} color="blue"/>
+        <StatCard label="Total Admins" value="2" change={0} icon={<Shield className="w-5 h-5" />} color="purple"/>
         <StatCard label="Products" value="850K" change={15} icon={<Package className="w-5 h-5" />} color="orange" />
         <StatCard label="Revenue" value="$2.4M" change={18} icon={<DollarSign className="w-5 h-5" />} color="purple" />
       </div>
