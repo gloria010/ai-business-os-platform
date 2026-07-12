@@ -21,52 +21,10 @@ export default function Dashboard() {
       description: "Employee records",
     },
     {
-      name: "Applications",
-      icon: "📋",
-      path: "applications",
-      description: "Track applications",
-    },
-    {
-      name: "Resume Manager",
-      icon: "📄",
-      path: "resumes",
-      description: "Candidate resumes",
-    },
-    {
-      name: "Orders",
-      icon: "🛒",
-      path: "orders",
-      description: "Manage orders",
-    },
-    {
-      name: "Products",
-      icon: "📦",
-      path: "products",
-      description: "Inventory",
-    },
-    {
-      name: "Analytics",
-      icon: "📊",
-      path: "analytics",
-      description: "Business analytics",
-    },
-    {
-      name: "AI Insights",
-      icon: "🤖",
-      path: "insights",
-      description: "AI recommendations",
-    },
-    {
-      name: "Notifications",
-      icon: "🔔",
-      path: "notifications",
-      description: "Alerts",
-    },
-    {
-      name: "Settings",
-      icon: "⚙️",
-      path: "settings",
-      description: "Workspace settings",
+      name: "Sales",
+      icon: "💰",
+      path: "sales",
+      description: "Sales Management",
     },
   ];
 
@@ -90,6 +48,7 @@ export default function Dashboard() {
           <Link
             key={item.name}
             to={`/businesses/${company?.workspace}/${item.path}`}
+             state={{ company }}
           >
 
             <div

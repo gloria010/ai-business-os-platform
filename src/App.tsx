@@ -27,6 +27,7 @@ import ProfilePage from './pages/ProfilePage';
 import Dashboard from './pages/Businesses/Dashboard';
 import HR from './pages/Businesses/HR';
 import Employees from './pages/Businesses/Employees';
+import Sales from "./pages/Businesses/Sales";
 import Applications from './pages/Businesses/Applications';
 import ResumeManager from './pages/Businesses/ResumeManager';
 import Analytics from './pages/Businesses/Analytics';
@@ -76,6 +77,7 @@ export default function App() {
 <Route path="/businesses/:company/dashboard" element={<Dashboard />} />
 <Route path="/businesses/:company/hr" element={<HR />} />
 <Route path="/businesses/:company/employees" element={<Employees />} />
+<Route path="/businesses/:company/sales" element={<Sales />} />
 <Route path="/businesses/:company/applications" element={<Applications />} />
 <Route path="/businesses/:company/resume-manager" element={<ResumeManager />} />
 <Route path="/businesses/:company/analytics" element={<Analytics />} />

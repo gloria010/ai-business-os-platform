@@ -91,9 +91,10 @@ export default function Navbar() {
                     {unreadNotifs > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadNotifs}</span>}
                   </Link>
                   <Link to="/dashboard" className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-100 transition-colors group">
-                    <img src={state.user?.avatar} alt="" className="w-7 h-7 rounded-full object-cover border-2 border-blue-200" />
-                    <span className={`text-sm font-medium hidden xl:block transition-colors ${transparent ? 'text-white group-hover:text-slate-800' : 'text-slate-700'}`}>{state.user?.name.split(' ')[0]}</span>
-                    <ChevronDown className={`w-3 h-3 hidden xl:block transition-colors ${transparent ? 'text-white group-hover:text-slate-800' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium hidden xl:block transition-colors ${transparent ? 'text-white group-hover:text-slate-800' : 'text-slate-700'}`}>
+                  {state.user?.name}
+                 </span>
+                  <ChevronDown className={`w-3 h-3 hidden xl:block transition-colors ${transparent ? 'text-white group-hover:text-slate-800' : 'text-slate-400'}`} />
                   </Link>
                 </>
               ) : (

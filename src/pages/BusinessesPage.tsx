@@ -21,33 +21,33 @@ interface Company {
 const companies: Company[] = [
   {
     id: 1,
-    name: "Infosys",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg",
-    workspace: "infosys",
+    name: "TechZone Store",
+    logo: "https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=100",
+    workspace: "techzone-store",
   },
   {
     id: 2,
-    name: "TCS",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/b/b1/Tata_Consultancy_Services_Logo.svg",
-    workspace: "tcs",
+    name: "Urban Fashion Hub",
+    logo: "https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=100",
+    workspace: "urban-fashion-hub",
   },
   {
     id: 3,
-    name: "Reliance Retail",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Reliance_Retail_Logo.png",
-    workspace: "reliance-retail",
+    name: "Luxe Living Furniture",
+    logo: "https://images.pexels.com/photos/1866149/pexels-photo-1866149.jpeg?auto=compress&cs=tinysrgb&w=100",
+    workspace: "Furniture & Home",
   },
   {
     id: 4,
-    name: "Decathlon India",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/1/16/Decathlon_Logo.svg",
-    workspace: "decathlon-india",
+    name: "ProSports Gear",
+    logo: "https://images.pexels.com/photos/248547/pexels-photo-248547.jpeg?auto=compress&cs=tinysrgb&w=100",
+    workspace: "Sports & Fitness",
   },
   {
     id: 5,
-    name: "Zomato",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/75/Zomato_logo.png",
-    workspace: "zomato",
+    name:"Glow Beauty Studio",
+    logo: "https://images.pexels.com/photos/2253834/pexels-photo-2253834.jpeg?auto=compress&cs=tinysrgb&w=100",
+    workspace: "Beauty & Cosmetics",
   },
 ];
 

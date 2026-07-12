@@ -1,13 +1,7 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Users,
-  Bell,
-  FileText,
-  CheckCircle,
-  Clock,
-  XCircle,
-  Eye,
+  LayoutDashboard, Users, Bell, FileText, CheckCircle, Clock, XCircle, Eye, TrendingUp,
 } from "lucide-react";
 
 import {
@@ -17,10 +11,36 @@ import {
   employees,
   hrNotifications,
 } from "../../data/hrData";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
 
 export default function HR() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [applicationTab, setApplicationTab] = useState("applied");
+
+ const { company } = useParams();
+ const companyNames: Record<string, string> = {
+  "techzone-store": "TechZone Store",
+  "urban-fashion-hub": "Urban Fashion Hub",
+  "luxe-living-furniture": "Luxe Living Furniture",
+  "prosports-gear": "ProSports Gear",
+  "glow-beauty-studio": "Glow Beauty Studio",
+};
+  const employeeGrowth = [
+  { month: "Jan", employees: 2 },
+  { month: "Feb", employees: 2 },
+  { month: "Mar", employees: 3 },
+  { month: "Apr", employees: 4 },
+  { month: "May", employees: 5 },
+  { month: "Jun", employees: 5 },
+];
 
   return (
     <div className="min-h-screen bg-slate-100 flex">
@@ -32,7 +52,7 @@ export default function HR() {
         <div className="p-6 border-b">
 
           <h1 className="text-2xl font-bold">
-            Infosys
+            {companyNames[company || ""] || "Business Workspace"}
           </h1>
 
           <p className="text-slate-500 text-sm">
@@ -104,10 +124,249 @@ export default function HR() {
         </h1>
         {/* ================= Dashboard ================= */}
 
+{/* ================= Dashboard ================= */}
+
 {activeMenu === "dashboard" && (
-  <div className="bg-white rounded-2xl shadow p-8 min-h-[500px]">
+
+  <div className="space-y-8">
+
+    {/* Dashboard Cards */}
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      {/* Applications */}
+
+      <div
+        onClick={() => setActiveMenu("applications")}
+        className="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+      >
+
+        <div className="flex justify-between items-center">
+
+          <div>
+
+            <p className="text-slate-500 text-sm">
+              Applications
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2">
+              9
+            </h2>
+
+          </div>
+
+          <div className="bg-blue-100 p-4 rounded-full">
+
+            <FileText className="text-blue-600" size={28} />
+
+          </div>
+
+        </div>
+
+        <div className="mt-6 space-y-2 text-sm">
+
+          <div className="flex justify-between">
+
+            <span>Applied</span>
+
+            <span className="font-semibold text-green-600">
+              3
+            </span>
+
+          </div>
+
+          <div className="flex justify-between">
+
+            <span>Pending</span>
+
+            <span className="font-semibold text-yellow-500">
+              3
+            </span>
+
+          </div>
+
+          <div className="flex justify-between">
+
+            <span>Rejected</span>
+
+            <span className="font-semibold text-red-600">
+              3
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Employees */}
+
+      <div
+        onClick={() => setActiveMenu("employees")}
+        className="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+      >
+
+        <div className="flex justify-between items-center">
+
+          <div>
+
+            <p className="text-slate-500 text-sm">
+              Employees
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2">
+              5
+            </h2>
+
+          </div>
+
+          <div className="bg-green-100 p-4 rounded-full">
+
+            <Users className="text-green-600" size={28} />
+
+          </div>
+
+        </div>
+
+        <div className="mt-6">
+
+          <div className="flex justify-between text-sm">
+
+            <span>Total Employees</span>
+
+            <span className="font-semibold">
+              5
+            </span>
+
+          </div>
+
+          <div className="flex justify-between text-sm mt-2">
+
+            <span>On Leave</span>
+
+            <span className="font-semibold text-yellow-600">
+              1
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Notifications */}
+
+      <div
+        onClick={() => setActiveMenu("notifications")}
+        className="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+      >
+
+        <div className="flex justify-between items-center">
+
+          <div>
+
+            <p className="text-slate-500 text-sm">
+              Notifications
+            </p>
+
+            <h2 className="text-3xl font-bold mt-2">
+              5
+            </h2>
+
+          </div>
+
+          <div className="bg-yellow-100 p-4 rounded-full">
+
+            <Bell className="text-yellow-600" size={28} />
+
+          </div>
+
+        </div>
+
+        <div className="mt-6">
+
+          <div className="flex justify-between text-sm">
+
+            <span>Total Notifications</span>
+
+            <span className="font-semibold">
+              5
+            </span>
+
+          </div>
+
+          <div className="flex justify-between text-sm mt-2">
+
+            <span>Unread</span>
+
+            <span className="font-semibold text-red-600">
+              2
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    {/* Employee Growth Chart will come here */}
+    {/* ================= Employee Growth ================= */}
+
+<div className="bg-white rounded-2xl shadow-lg p-6">
+
+  <div className="flex items-center gap-3 mb-6">
+
+    <div className="bg-blue-100 p-3 rounded-full">
+      <TrendingUp className="text-blue-600" size={24} />
+    </div>
+
+    <div>
+      <h2 className="text-2xl font-bold">
+        Employee Growth
+      </h2>
+
+      <p className="text-slate-500 text-sm">
+        Monthly employee growth
+      </p>
+    </div>
 
   </div>
+
+  <div className="h-80">
+
+    <ResponsiveContainer width="100%" height="100%">
+
+      <LineChart data={employeeGrowth}>
+
+        <CartesianGrid strokeDasharray="3 3" />
+
+        <XAxis dataKey="month" />
+
+        <YAxis allowDecimals={false} />
+
+        <Tooltip />
+
+        <Line
+          type="monotone"
+          dataKey="employees"
+          stroke="#2563eb"
+          strokeWidth={3}
+          dot={{ r: 6 }}
+          activeDot={{ r: 8 }}
+        />
+
+      </LineChart>
+
+    </ResponsiveContainer>
+
+  </div>
+
+</div>
+
+  </div>
+
 )}
 
 {/* ================= Applications ================= */}
