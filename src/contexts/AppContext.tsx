@@ -27,13 +27,13 @@ type Action =
   | { type: 'MARK_ALL_NOTIFICATIONS_READ' };
 
 const initialState: AppState = {
-  user: mockUser,
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   cart: [],
-  wishlist: ['prod-1', 'prod-3', 'prod-7'],
+  wishlist: [],
   notifications: mockNotifications,
   searchQuery: '',
-  recentSearches: ['wireless headphones', 'summer dress', 'smart tv', 'yoga mat'],
+  recentSearches: [],
 };
 
 function appReducer(state: AppState, action: Action): AppState {

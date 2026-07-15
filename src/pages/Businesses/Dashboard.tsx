@@ -9,6 +9,12 @@ export default function Dashboard() {
 
   const modules = [
     {
+  name: "CEO",
+  icon: "👑",
+  path: "ceo",
+  description: "Business Overview Dashboard",
+},
+    {
       name: "HR",
       icon: "🧑‍💼",
       path: "hr",
@@ -26,6 +32,13 @@ export default function Dashboard() {
       path: "sales",
       description: "Sales Management",
     },
+    {
+  name: "Inventory",
+  icon: "📦",
+  path: "inventory",
+  description: "Inventory Management",
+},
+
   ];
 
 

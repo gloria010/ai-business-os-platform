@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Zap, Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin, ArrowRight } from 'lucide-react';
+import { Zap, Facebook, Twitter, Instagram, Linkedin, Youtube, Mail, Phone, MapPin, ArrowRight, CreditCard } from 'lucide-react';
 
 export default function Footer() {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) { setSubscribed(true); setEmail(''); }
-  };
 
   return (
     <footer className="bg-slate-900 text-slate-300">
@@ -43,42 +37,92 @@ export default function Footer() {
               ))}
             </ul>
           </div>
+          
 
           {/* Resources */}
-          <div>
-            <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">Resources</h3>
-            <ul className="space-y-2.5">
-              {['Documentation', 'API Reference', 'Tutorials', 'Help Center', 'Community', 'Status'].map(item => (
-                <li key={item}><Link to="#" className="text-sm hover:text-blue-400 transition-colors">{item}</Link></li>
-              ))}
-            </ul>
-          </div>
+          <ul className="space-y-2.5">
+  {[
+    'Documentation',
+    'API Reference',
+    'Tutorials',
+    'Help Center',
+    'Community',
+    'Status',
+  ].map(item => (
+    <li key={item}>
+      <Link
+        to="#"
+        className="text-sm hover:text-blue-400 transition-colors"
+      >
+        {item}
+      </Link>
+    </li>
+  ))}
+
+  <li>
+    <Link
+  to="/feedback"
+  className="
+    inline-flex
+    items-center
+    gap-2
+    px-5
+    py-3
+    mt-2
+    rounded-xl
+    bg-gradient-to-r
+    from-blue-600
+    to-indigo-600
+    text-white
+    font-semibold
+    shadow-lg
+    hover:from-blue-700
+    hover:to-indigo-700
+    hover:scale-105
+    transition-all
+    duration-300
+  "
+>
+  💬 Give Feedback
+</Link>
+  </li>
+</ul>
 
           {/* Newsletter */}
-          <div>
-            <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">Stay Updated</h3>
-            <p className="text-sm text-slate-400 mb-4">Get the latest updates on new features and business tips.</p>
-            {subscribed ? (
-              <div className="bg-emerald-900/50 border border-emerald-500/30 rounded-xl p-3 text-emerald-400 text-sm font-medium">
-                Thanks for subscribing!
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe} className="space-y-2">
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500" />
-                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
-                  Subscribe <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            )}
-            <div className="flex gap-3 mt-6">
-              {[Facebook, Twitter, Instagram, Linkedin, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="w-8 h-8 bg-slate-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors">
-                  <Icon className="w-3.5 h-3.5" />
-                </a>
-              ))}
-            </div>
-          </div>
+          {/* Subscription */}
+<div>
+  <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
+    Subscription Plans
+  </h3>
+
+  <p className="text-sm text-slate-400 mb-5">
+    Choose the perfect plan for your business and unlock AI Business OS features.
+  </p>
+
+  <Link
+    to="/subscription"
+    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+  >
+    View Plans
+    <ArrowRight className="w-4 h-4" />
+  </Link>
+
+  <p className="text-xs text-slate-500 mt-4">
+    Starter • Professional • Enterprise
+  </p>
+
+  <div className="flex gap-3 mt-6">
+    {[Facebook, Twitter, Instagram, Linkedin, Youtube].map((Icon, i) => (
+      <a
+        key={i}
+        href="#"
+        className="w-8 h-8 bg-slate-800 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors"
+      >
+        <Icon className="w-3.5 h-3.5" />
+      </a>
+    ))}
+  </div>
+</div>
         </div>
       </div>
 

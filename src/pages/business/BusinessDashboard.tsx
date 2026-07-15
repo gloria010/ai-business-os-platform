@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DollarSign, ShoppingBag, Users, Package, TrendingUp, TrendingDown, ArrowRight, Eye } from 'lucide-react';
@@ -10,10 +11,14 @@ import { aiInsights, revenueData, ordersData, categoryDistribution, products, mo
 
 export default function BusinessDashboard() {
   const stats = { revenue: 98000, orders: 980, customers: 5800, products: 215 };
+const location = useLocation();
 
+const company = location.state?.company;
   return (
-    <DashboardLayout role="business" title="Business Dashboard">
-      {/* Welcome Banner */}
+<DashboardLayout
+  role="business"
+  title={`${company?.name || "Business"} CEO Dashboard`}
+>      {/* Welcome Banner */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 mb-8 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -21,7 +26,7 @@ export default function BusinessDashboard() {
           <div className="absolute -bottom-10 right-20 w-32 h-32 bg-white rounded-full" />
         </div>
         <div className="relative">
-          <h2 className="text-white text-xl font-bold mb-1">Welcome to Your Business Dashboard</h2>
+          <h2 className="text-white text-xl font-bold mb-1">Welcome to {company?.name || "Your Business"}</h2>
           <p className="text-emerald-100 text-sm">Here's what's happening with your business today</p>
         </div>
       </motion.div>

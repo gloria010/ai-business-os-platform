@@ -22,6 +22,10 @@ import {
 } from "recharts";
 
 export default function HR() {
+
+  const [showReplyBox, setShowReplyBox] = useState(false);
+const [replyText, setReplyText] = useState("");
+
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [applicationTab, setApplicationTab] = useState("applied");
 
@@ -122,7 +126,7 @@ export default function HR() {
         <h1 className="text-3xl font-bold mb-8">
           Human Resources
         </h1>
-        {/* ================= Dashboard ================= */}
+        
 
 {/* ================= Dashboard ================= */}
 
@@ -645,6 +649,36 @@ export default function HR() {
         <p className="text-sm text-slate-400 mt-2">
           {notification.date}
         </p>
+
+        <button
+  onClick={() => setShowReplyBox(true)}
+  className="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+>
+  Reply
+</button>
+
+{showReplyBox && (
+  <div className="mt-3">
+    <textarea
+      value={replyText}
+      onChange={(e) => setReplyText(e.target.value)}
+      placeholder="Type your reply..."
+      className="w-full border border-gray-300 rounded-lg p-3 text-sm"
+      rows={3}
+    />
+
+    <button
+      onClick={() => {
+        alert("Reply submitted successfully");
+        setReplyText("");
+        setShowReplyBox(false);
+      }}
+      className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+    >
+      Submit
+    </button>
+  </div>
+)}
 
       </div>
 

@@ -127,10 +127,7 @@ export default function LoginPage() {
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="remember" className="rounded text-blue-600" />
-              <label htmlFor="remember" className="text-sm text-slate-600">Remember me for 30 days</label>
-            </div>
+            
 
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} type="submit" disabled={loading}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-3 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-70 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25">

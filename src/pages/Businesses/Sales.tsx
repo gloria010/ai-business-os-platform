@@ -8,6 +8,9 @@ import {
 } from "recharts";
 
 export default function Sales() {
+
+  const [replyNotificationId, setReplyNotificationId] = useState<number | null>(null);
+const [replyText, setReplyText] = useState("");
   const { company } = useParams();
 
 const companyNames: Record<string, string> = {
@@ -131,6 +134,102 @@ ORD1005: {
   address: "Electronic City, Bangalore, Karnataka"
 }
 };
+
+const communicationMessages = [
+  {
+    id: 1,
+    sender: "Sales Manager",
+    color: "blue",
+    border: "border-blue-600",
+    bg: "bg-blue-50",
+    text: "text-blue-700",
+    time: "Today • 9:15 AM",
+    message:
+      "Laptop sales increased by 18% this week. We recommend adding more inventory before the weekend.",
+  },
+  {
+    id: 2,
+    sender: "Business Owner",
+    color: "green",
+    border: "border-green-600",
+    bg: "bg-green-50",
+    text: "text-green-700",
+    time: "Today • 10:00 AM",
+    message:
+      "Approved. Increase the stock by 100 units and inform the warehouse team.",
+  },
+  {
+    id: 3,
+    sender: "Sales Executive",
+    color: "yellow",
+    border: "border-yellow-500",
+    bg: "bg-yellow-50",
+    text: "text-yellow-700",
+    time: "Yesterday",
+    message:
+      "Several customers requested an additional 10% discount on smartphones during the festival sale.",
+  },
+  {
+    id: 4,
+    sender: "Marketing Team",
+    color: "purple",
+    border: "border-purple-600",
+    bg: "bg-purple-50",
+    text: "text-purple-700",
+    time: "Yesterday",
+    message:
+      "A new social media campaign will begin tomorrow to boost weekend sales.",
+  },
+  {
+    id: 5,
+    sender: "Warehouse Team",
+    color: "red",
+    border: "border-red-500",
+    bg: "bg-red-50",
+    text: "text-red-700",
+    time: "2 Days Ago",
+    message:
+      "Inventory for wireless keyboards is running low. Please arrange replenishment within two days.",
+  },
+];
+
+const salesNotifications = [
+  {
+    id: 1,
+    title: "New Order Received",
+    message: "Rahul Sharma placed an order worth ₹75,000.",
+    time: "Today",
+    color: "green",
+  },
+  {
+    id: 2,
+    title: "Payment Successful",
+    message: "Payment of ₹35,000 received from Priya Nair.",
+    time: "1 hour ago",
+    color: "blue",
+  },
+  {
+    id: 3,
+    title: "Low Stock Alert",
+    message: "Wireless Keyboard stock is below 10 units.",
+    time: "Yesterday",
+    color: "yellow",
+  },
+  {
+    id: 4,
+    title: "Sales Target Achieved",
+    message: "Congratulations! Monthly sales target has been achieved.",
+    time: "2 days ago",
+    color: "purple",
+  },
+  {
+    id: 5,
+    title: "Order Cancelled",
+    message: "Order #ORD1004 has been cancelled by the customer.",
+    time: "3 days ago",
+    color: "red",
+  },
+];
 
   return (
      <div className="min-h-screen bg-slate-100 flex">
@@ -1009,271 +1108,168 @@ ORD1005: {
 
 <div className="bg-white rounded-2xl shadow p-6">
 
-  <h2 className="text-2xl font-bold mb-8">
-    Sales Notifications
-  </h2>
+<h2 className="text-2xl font-bold mb-8">
+Sales Notifications
+</h2>
 
-  <div className="space-y-5">
+<div className="space-y-5">
 
-    {/* Notification 1 */}
+{salesNotifications.map((notification) => (
 
-    <div className="border-l-4 border-green-500 bg-green-50 rounded-xl p-5 hover:shadow-lg transition">
+<div
+key={notification.id}
+className={`border-l-4 rounded-xl p-5 hover:shadow-lg transition
+${
+notification.color==="green"
+?"border-green-500 bg-green-50":
+notification.color==="blue"
+?"border-blue-500 bg-blue-50":
+notification.color==="yellow"
+?"border-yellow-500 bg-yellow-50":
+notification.color==="purple"
+?"border-purple-500 bg-purple-50":
+"border-red-500 bg-red-50"
+}
+`}
+>
 
-      <div className="flex justify-between">
+<div className="flex justify-between">
 
-        <div>
+<div>
 
-          <h3 className="font-bold text-lg">
-            New Order Received
-          </h3>
+<h3 className="font-bold text-lg">
+{notification.title}
+</h3>
 
-          <p className="text-slate-600 mt-2">
-            Rahul Sharma placed an order worth ₹75,000.
-          </p>
+<p className="text-slate-600 mt-2">
+{notification.message}
+</p>
 
-        </div>
+</div>
 
-        <span className="text-sm text-slate-500">
-          Today
-        </span>
+<span className="text-sm text-slate-500">
+{notification.time}
+</span>
 
-      </div>
+</div>
 
-    </div>
+<button
+onClick={()=>setReplyNotificationId(notification.id)}
+className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+>
+Reply
+</button>
 
-    {/* Notification 2 */}
+{replyNotificationId===notification.id && (
 
-    <div className="border-l-4 border-blue-500 bg-blue-50 rounded-xl p-5 hover:shadow-lg transition">
+<div className="mt-4">
 
-      <div className="flex justify-between">
+<textarea
+rows={3}
+value={replyText}
+onChange={(e)=>setReplyText(e.target.value)}
+placeholder="Type your reply..."
+className="w-full border border-gray-300 rounded-lg p-3"
+/>
 
-        <div>
-
-          <h3 className="font-bold text-lg">
-            Payment Successful
-          </h3>
-
-          <p className="text-slate-600 mt-2">
-            Payment of ₹35,000 received from Priya Nair.
-          </p>
-
-        </div>
-
-        <span className="text-sm text-slate-500">
-          1 hour ago
-        </span>
-
-      </div>
-
-    </div>
-
-    {/* Notification 3 */}
-
-    <div className="border-l-4 border-yellow-500 bg-yellow-50 rounded-xl p-5 hover:shadow-lg transition">
-
-      <div className="flex justify-between">
-
-        <div>
-
-          <h3 className="font-bold text-lg">
-            Low Stock Alert
-          </h3>
-
-          <p className="text-slate-600 mt-2">
-            Wireless Keyboard stock is below 10 units.
-          </p>
-
-        </div>
-
-        <span className="text-sm text-slate-500">
-          Yesterday
-        </span>
-
-      </div>
-
-    </div>
-
-    {/* Notification 4 */}
-
-    <div className="border-l-4 border-purple-500 bg-purple-50 rounded-xl p-5 hover:shadow-lg transition">
-
-      <div className="flex justify-between">
-
-        <div>
-
-          <h3 className="font-bold text-lg">
-            Sales Target Achieved
-          </h3>
-
-          <p className="text-slate-600 mt-2">
-            Congratulations! Monthly sales target has been achieved.
-          </p>
-
-        </div>
-
-        <span className="text-sm text-slate-500">
-          2 days ago
-        </span>
-
-      </div>
-
-    </div>
-
-    {/* Notification 5 */}
-
-    <div className="border-l-4 border-red-500 bg-red-50 rounded-xl p-5 hover:shadow-lg transition">
-
-      <div className="flex justify-between">
-
-        <div>
-
-          <h3 className="font-bold text-lg">
-            Order Cancelled
-          </h3>
-
-          <p className="text-slate-600 mt-2">
-            Order #ORD1004 has been cancelled by the customer.
-          </p>
-
-        </div>
-
-        <span className="text-sm text-slate-500">
-          3 days ago
-        </span>
-
-      </div>
-
-    </div>
-
-  </div>
+<button
+onClick={()=>{
+alert("Reply submitted successfully");
+setReplyText("");
+setReplyNotificationId(null);
+}}
+className="mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+>
+Submit
+</button>
 
 </div>
 
 )}
 
+</div>
+
+))}
+
+</div>
+
+</div>
+
+)}
         {/* ================= Business Communication ================= */}
 
 {activeMenu === "communication" && (
 
 <div className="bg-white rounded-2xl shadow p-6">
 
-  <h2 className="text-2xl font-bold mb-8">
-    Business Communication
-  </h2>
+<h2 className="text-2xl font-bold mb-8">
+Business Communication
+</h2>
 
-  <div className="space-y-5">
+<div className="space-y-5">
 
-    {/* Message 1 */}
+{communicationMessages.map((msg)=>(
 
-    <div className="bg-blue-50 border-l-4 border-blue-600 rounded-xl p-5">
+<div
+key={msg.id}
+className={`${msg.bg} border-l-4 ${msg.border} rounded-xl p-5`}
+>
 
-      <div className="flex justify-between">
+<div className="flex justify-between">
 
-        <h3 className="font-bold text-blue-700">
-          Sales Manager
-        </h3>
+<h3 className={`font-bold ${msg.text}`}>
+{msg.sender}
+</h3>
 
-        <span className="text-sm text-slate-500">
-          Today • 9:15 AM
-        </span>
+<span className="text-sm text-slate-500">
+{msg.time}
+</span>
 
-      </div>
+</div>
 
-      <p className="mt-3 text-slate-700">
-        Laptop sales increased by 18% this week. We recommend adding more inventory before the weekend.
-      </p>
+<p className="mt-3 text-slate-700">
+{msg.message}
+</p>
 
-    </div>
+<button
+onClick={()=>setReplyNotificationId(msg.id)}
+className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+>
+Reply
+</button>
 
-    {/* Message 2 */}
+{replyNotificationId===msg.id && (
 
-    <div className="bg-green-50 border-l-4 border-green-600 rounded-xl p-5">
+<div className="mt-4">
 
-      <div className="flex justify-between">
+<textarea
+rows={3}
+value={replyText}
+onChange={(e)=>setReplyText(e.target.value)}
+placeholder="Type your reply..."
+className="w-full border border-gray-300 rounded-lg p-3"
+/>
 
-        <h3 className="font-bold text-green-700">
-          Business Owner
-        </h3>
+<button
+onClick={()=>{
+alert("Reply submitted successfully");
+setReplyText("");
+setReplyNotificationId(null);
+}}
+className="mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
+>
+Submit
+</button>
 
-        <span className="text-sm text-slate-500">
-          Today • 10:00 AM
-        </span>
+</div>
 
-      </div>
+)}
 
-      <p className="mt-3 text-slate-700">
-        Approved. Increase the stock by 100 units and inform the warehouse team.
-      </p>
+</div>
 
-    </div>
+))}
 
-    {/* Message 3 */}
-
-    <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-5">
-
-      <div className="flex justify-between">
-
-        <h3 className="font-bold text-yellow-700">
-          Sales Executive
-        </h3>
-
-        <span className="text-sm text-slate-500">
-          Yesterday
-        </span>
-
-      </div>
-
-      <p className="mt-3 text-slate-700">
-        Several customers requested an additional 10% discount on smartphones during the festival sale.
-      </p>
-
-    </div>
-
-    {/* Message 4 */}
-
-    <div className="bg-purple-50 border-l-4 border-purple-600 rounded-xl p-5">
-
-      <div className="flex justify-between">
-
-        <h3 className="font-bold text-purple-700">
-          Marketing Team
-        </h3>
-
-        <span className="text-sm text-slate-500">
-          Yesterday
-        </span>
-
-      </div>
-
-      <p className="mt-3 text-slate-700">
-        A new social media campaign will begin tomorrow to boost weekend sales.
-      </p>
-
-    </div>
-
-    {/* Message 5 */}
-
-    <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-5">
-
-      <div className="flex justify-between">
-
-        <h3 className="font-bold text-red-700">
-          Warehouse Team
-        </h3>
-
-        <span className="text-sm text-slate-500">
-          2 Days Ago
-        </span>
-
-      </div>
-
-      <p className="mt-3 text-slate-700">
-        Inventory for wireless keyboards is running low. Please arrange replenishment within two days.
-      </p>
-
-    </div>
-
-  </div>
+</div>
 
 </div>
 

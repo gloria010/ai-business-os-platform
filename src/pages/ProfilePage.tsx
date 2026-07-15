@@ -9,7 +9,7 @@ import { useToast } from '../components/ui/Toast';
 export default function ProfilePage() {
   const { state } = useApp();
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'personal' | 'addresses' | 'security' | 'preferences'>('personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'addresses' | 'security' >('personal');
   const [form, setForm] = useState({ name: state.user?.name || '', email: state.user?.email || '', phone: state.user?.phone || '' });
 
   const saveProfile = () => showToast('Profile updated successfully!', 'success');
@@ -18,7 +18,7 @@ export default function ProfilePage() {
     { id: 'personal', label: 'Personal Info', icon: User },
     { id: 'addresses', label: 'Addresses', icon: MapPin },
     { id: 'security', label: 'Security', icon: Shield },
-    { id: 'preferences', label: 'Preferences', icon: Settings },
+
   ];
 
   return (
@@ -138,31 +138,7 @@ export default function ProfilePage() {
               </>
             )}
 
-            {activeTab === 'preferences' && (
-              <>
-                <h2 className="font-bold text-slate-800 text-lg mb-6">Preferences</h2>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Email Notifications', desc: 'Receive order updates, offers, and news via email', key: 'emailUpdates' },
-                    { label: 'SMS Alerts', desc: 'Get order status alerts via SMS', key: 'smsAlerts' },
-                    { label: 'Push Notifications', desc: 'Receive push notifications on your device', key: 'notifications' },
-                  ].map(({ label, desc, key }) => (
-                    <div key={key} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                      <div>
-                        <p className="font-semibold text-slate-800 text-sm">{label}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{desc}</p>
-                      </div>
-                      <div className="relative">
-                        <input type="checkbox" defaultChecked={state.user?.preferences[key as keyof typeof state.user.preferences] as boolean} className="sr-only" />
-                        <div className="w-10 h-6 bg-blue-600 rounded-full cursor-pointer flex items-center px-1">
-                          <div className="w-4 h-4 bg-white rounded-full shadow-sm translate-x-4" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+            
           </motion.div>
         </div>
       </div>

@@ -31,21 +31,19 @@ const businessLinks = [
   { href: '/business/customers', icon: Users, label: 'Customers' },
   { href: '/business/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/business/insights', icon: Lightbulb, label: 'AI Insights' },
-  { href: '/business/notifications', icon: Bell, label: 'Notifications' },
-  { href: '/business/settings', icon: Settings, label: 'Settings' },
+  
 ];
 
 const adminLinks = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/businesses', icon: Shield, label: 'Businesses' },
+  { href: "/businesses", icon: Shield, label: "Businesses" },
+{ href: "/products", icon: Package, label: "Products" },
+{ href: "/categories", icon: Tag, label: "Categories" },
   { href: '/admin/consumers', icon: Users, label: 'Consumers' },
-  { href: '/admin/categories', icon: Tag, label: 'Categories' },
-  { href: '/admin/products', icon: Package, label: 'Products' },
   { href: '/admin/orders', icon: Truck, label: 'Orders' },
   { href: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
   { href: '/admin/reports', icon: FileText, label: 'Reports' },
   { href: '/admin/approvals', icon: Star, label: 'Approvals' },
-  { href: '/admin/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function Sidebar({ role = 'consumer', isOpen = true, onClose }: SidebarProps) {

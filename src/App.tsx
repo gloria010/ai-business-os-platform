@@ -22,20 +22,18 @@ import OrdersPage from './pages/OrdersPage';
 import SearchPage from './pages/SearchPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ProfilePage from './pages/ProfilePage';
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+import FeedbackPage from "./pages/FeedbackPage";
+
 
 //Businesses
 import Dashboard from './pages/Businesses/Dashboard';
 import HR from './pages/Businesses/HR';
 import Employees from './pages/Businesses/Employees';
 import Sales from "./pages/Businesses/Sales";
-import Applications from './pages/Businesses/Applications';
-import ResumeManager from './pages/Businesses/ResumeManager';
 import Analytics from './pages/Businesses/Analytics';
-import Notifications from './pages/Businesses/Notifications';
-import Settings from './pages/Businesses/Settings';
-import Orders from './pages/Businesses/Orders';
-import Products from './pages/Businesses/Products';
-import Insights from './pages/Businesses/Insights';
+import Inventory from "./pages/Businesses/Inventory";
 
 
 // Business Dashboard
@@ -49,7 +47,10 @@ import BusinessInsights from './pages/business/BusinessInsights';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminApprovals from './pages/admin/AdminApprovals';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminLogin from "./pages/admin/AdminLogin";
+//footer
+import SubscriptionPage from './pages/SubscriptionPage';
+import SubscriptionCheckoutPage from './pages/SubscriptionCheckoutPage';
+
 export default function App() {
   return (
     <AppProvider>
@@ -72,20 +73,21 @@ export default function App() {
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/feedback" element={<FeedbackPage />} />
 
                         {/* Businesses Workspace */}
 <Route path="/businesses/:company/dashboard" element={<Dashboard />} />
+<Route
+  path="/businesses/:company/ceo"
+  element={<BusinessDashboard />}
+/>
 <Route path="/businesses/:company/hr" element={<HR />} />
 <Route path="/businesses/:company/employees" element={<Employees />} />
 <Route path="/businesses/:company/sales" element={<Sales />} />
-<Route path="/businesses/:company/applications" element={<Applications />} />
-<Route path="/businesses/:company/resume-manager" element={<ResumeManager />} />
 <Route path="/businesses/:company/analytics" element={<Analytics />} />
-<Route path="/businesses/:company/orders" element={<Orders />} />
-<Route path="/businesses/:company/products" element={<Products />} />
-<Route path="/businesses/:company/insights" element={<Insights />} />
-<Route path="/businesses/:company/notifications" element={<Notifications />} />
-<Route path="/businesses/:company/settings" element={<Settings />} />
+<Route path="/businesses/:company/inventory" element={<Inventory />}/>
 
 
             {/* Consumer Dashboard */}
@@ -106,12 +108,9 @@ export default function App() {
             <Route path="/business/settings" element={<ProfilePage />} />
 
             {/* Admin Dashboard */}
-<Route path="/admin" element={<AdminLogin />} />
-<Route path="/admin/dashboard" element={<AdminDashboard />} />
-<Route path="/admin/businesses" element={<AdminDashboard />} />
+<Route path="/admin" element={<AdminDashboard />} />
 <Route path="/admin/consumers" element={<AdminDashboard />} />
-<Route path="/admin/categories" element={<AdminDashboard />} />
-<Route path="/admin/products" element={<AdminDashboard />} />
+
 <Route path="/admin/orders" element={<AdminDashboard />} />
 <Route path="/admin/analytics" element={<AdminAnalytics />} />
 <Route path="/admin/approvals" element={<AdminApprovals />} />
@@ -119,6 +118,16 @@ export default function App() {
 <Route path="/admin/settings" element={<ProfilePage />} />
 <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
+<Route path="/businesses" element={<BusinessesPage />} />
+<Route path="/categories" element={<CategoriesPage />} />
+<Route path="/products" element={<ProductsPage/>} />
+
+ {/* Footer */}
+<Route path="/subscription" element={<SubscriptionPage />} />
+<Route
+  path="/subscription/checkout"
+  element={<SubscriptionCheckoutPage />}
+/>
             
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
