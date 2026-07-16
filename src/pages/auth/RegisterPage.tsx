@@ -143,7 +143,7 @@ export default function RegisterPage() {
           'success',
           'Registration Successful'
         );
-        setTimeout(() => navigate('/login'), 10000);
+        setTimeout(() => navigate('/login'), 20000);
       } else {
         showToast(
           'Account created! Welcome to AIBizOS!',

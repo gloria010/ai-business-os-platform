@@ -7,6 +7,7 @@ import registerRoute from "./routes/register.js";
 import loginRoute from "./routes/login.js";
 import companiesRoute from "./routes/companies.js"; // new
 import { initSchema } from "./db.js"; // <-- adjust path to wherever your schema file actually lives
+import adminRoute from "./routes/admin.js";
 
 dotenv.config();
 
@@ -32,7 +33,8 @@ app.use(session({
 
 app.use("/api", registerRoute);
 app.use("/api", loginRoute);
-app.use("/api", companiesRoute); // new
+app.use("/api", companiesRoute); 
+app.use("/api", adminRoute);
 
 app.get("/", (req, res) => {
     res.send("Backend server is working");

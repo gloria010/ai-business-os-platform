@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS business_owners (
   pincode VARCHAR(10) DEFAULT NULL,
   company_password VARCHAR(8) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

@@ -1,2 +1,37 @@
-New file ProtectedRoute.tsx — reads state.user via useApp(), redirects if role doesn't match
-App.tsx — wrap /businesses and /admin routes with ProtectedRoute
+1. Database (one-time, run in MySQL Workbench)
+sqlALTER TABLE business_owners
+ADD COLUMN status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending';
+(Already covered above — run this now if you haven't.)
+2. db.js — update initSchema()
+So the column exists on fresh setups too, not just your current dev DB. I haven't seen this file yet — need you to paste it.
+3. routes/register.js — remove auto department-DB creation
+Currently, right after a business owner registers, this block runs immediately:
+jsif (role === "business_owner") {
+  try {
+    const createdDbs = await createDepartmentDatabases(businessOwnerId, businessId);
+    ...
+This entire block needs to be deleted. Department DBs should no longer be created at signup — only after admin approval.
+4. New file: routes/admin.js
+A new route, something like:
+jsrouter.patch("/admin/business-owners/:id/approve", requireAdmin, async (req, res) => {
+  // set status = 'approved'
+  // then call createDepartmentDatabases(...)
+});
+Needs your admin session-check logic to guard it — need login.js to see how admin sessions are set.
+5. server.js — mount the new admin route
+jsimport adminRoute from "./routes/admin.js";
+...
+app.use("/api", adminRoute);
+6. Frontend — new admin dashboard page/section
+Somewhere in your admin UI, a list of pending business owners with an "Approve" / "Reject" button that calls PATCH /api/admin/business-owners/:id/approve. Do you already have an admin dashboard page, or does this need to be built from scratch too?
+To move forward accurately, please paste:
+
+db.js
+routes/login.js
+
+
+
+
+
+
+db add colum

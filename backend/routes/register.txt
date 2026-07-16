@@ -1,5 +1,6 @@
 import express from "express";
 import pool from "../db.js";
+import { createDepartmentDatabases } from "../createDepartmentDatabases.js";
 
 const router = express.Router();
 
@@ -82,7 +83,8 @@ router.post("/register", async (req, res) => {
     const userId = userResult.insertId;
 
     let companyPassword = null; // only set for business_owner, returned in the response below
-    let businessId = null; // only set for business_owner
+    let businessId = null; // only set for business_owner, needed later for department db creation
+    let businessOwnerId = null; // business_owners.id (NOT users.id) — this is what business_departments.owner_id must reference
 
     if (role === "business_owner") {
       if (!company || !businessCategory) {
@@ -108,15 +110,17 @@ router.post("/register", async (req, res) => {
       businessId = generateBusinessId(businessCategory, company);
       companyPassword = generateCompanyPassword();
 
-      // status defaults to 'pending' in the schema — department databases are
-      // NOT created here anymore. They only get created once an admin approves
-      // this business owner via PATCH /api/admin/business-owners/:id/approve
-      await conn.query(
-        `INSERT INTO business_owners
-        (user_id, business_id, company, business_category, subscription, subscription_type, pincode, company_password)
-         VALUES (?, ?, ?, ?, NULL, NULL, ?, ?)`,
-        [userId, businessId, company, businessCategory, pincode || null, companyPassword]
-      );
+      const [ownerInsertResult] = await conn.query(
+     `INSERT INTO business_owners
+     (user_id, business_id, company, business_category, subscription, subscription_type, pincode, company_password)
+      VALUES (?, ?, ?, ?, NULL, NULL, ?, ?)`,
+     [userId, businessId, company, businessCategory, pincode || null, companyPassword]
+    );
+      // business_departments.owner_id has an FK to business_owners.id (that
+      // table's own auto-increment PK) — NOT users.id. userId and
+      // business_owners.id are separate sequences that can easily diverge,
+      // so we must capture and use the real business_owners.id here.
+      businessOwnerId = ownerInsertResult.insertId;
     }
 
     if (role === "employee") {
@@ -151,11 +155,30 @@ router.post("/register", async (req, res) => {
 
     await conn.commit();
 
+    // --- Department database creation ---
+    // Runs AFTER the transaction commits, and on the shared `pool` (not `conn`),
+    // because CREATE DATABASE causes an implicit commit in MySQL and can't be
+    // part of a rollback-able transaction anyway.
+    // This is deliberately non-fatal: if it fails, the account still exists and
+    // registration still succeeds — we just log the error for follow-up, rather
+    // than telling the user their signup failed when their account was created fine.
+    if (role === "business_owner") {
+      try {
+        const createdDbs = await createDepartmentDatabases(businessOwnerId, businessId);
+        console.log(`Department databases created for owner ${businessOwnerId}:`, createdDbs);
+      } catch (dbErr) {
+        console.error(
+          `Failed to create department databases for owner ${businessOwnerId}:`,
+          dbErr
+        );
+      }
+    }
+
     res.json({
       success: true,
       message:
         role === "business_owner"
-          ? `User registered successfully. Your company password is ${companyPassword} — keep it safe, you'll need it for company-level access. Your business is now pending admin approval.`
+          ? `User registered successfully. Your company password is ${companyPassword} — keep it safe, you'll need it for company-level access.`
           : "User registered successfully",
       id: userId,
       ...(companyPassword ? { companyPassword } : {}),
