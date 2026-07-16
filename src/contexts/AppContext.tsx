@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+// changed user added admin 
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { CartItem, Product, User, Notification } from '../types';
-import { mockUser, notifications as mockNotifications } from '../data/mockData';
+import { notifications as mockNotifications } from '../data/mockData';
 
 interface AppState {
   user: User | null;
   isAuthenticated: boolean;
+  authLoading: boolean;
   cart: CartItem[];
   wishlist: string[];
   notifications: Notification[];
@@ -16,6 +18,7 @@ type Action =
   | { type: 'SET_USER'; payload: User | null }
   | { type: 'LOGIN'; payload: User }
   | { type: 'LOGOUT' }
+  | { type: 'SET_AUTH_LOADING'; payload: boolean }
   | { type: 'ADD_TO_CART'; payload: { product: Product; quantity?: number } }
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'UPDATE_CART_QUANTITY'; payload: { productId: string; quantity: number } }
@@ -29,6 +32,7 @@ type Action =
 const initialState: AppState = {
   user: null,
   isAuthenticated: false,
+  authLoading: true, // true until we've checked /session once
   cart: [],
   wishlist: [],
   notifications: mockNotifications,
@@ -39,11 +43,13 @@ const initialState: AppState = {
 function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_USER':
-      return { ...state, user: action.payload };
+      return { ...state, user: action.payload, isAuthenticated: !!action.payload };
     case 'LOGIN':
       return { ...state, user: action.payload, isAuthenticated: true };
     case 'LOGOUT':
       return { ...state, user: null, isAuthenticated: false, cart: [], wishlist: [] };
+    case 'SET_AUTH_LOADING':
+      return { ...state, authLoading: action.payload };
     case 'ADD_TO_CART': {
       const existing = state.cart.find(i => i.productId === action.payload.product.id);
       if (existing) {
@@ -102,6 +108,40 @@ const AppContext = createContext<{ state: AppState; dispatch: React.Dispatch<Act
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  // On first load, check if a session already exists on the backend
+  // (e.g. user refreshed the page after logging in)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkSession() {
+      try {
+        const res = await fetch('http://localhost:5000/api/session', {
+          credentials: 'include',
+        });
+
+        if (!res.ok) {
+          if (!cancelled) dispatch({ type: 'SET_USER', payload: null });
+          return;
+        }
+
+        const data = await res.json();
+        if (!cancelled && data.success && data.user) {
+          dispatch({ type: 'SET_USER', payload: data.user });
+        } else if (!cancelled) {
+          dispatch({ type: 'SET_USER', payload: null });
+        }
+      } catch (err) {
+        if (!cancelled) dispatch({ type: 'SET_USER', payload: null });
+      } finally {
+        if (!cancelled) dispatch({ type: 'SET_AUTH_LOADING', payload: false });
+      }
+    }
+
+    checkSession();
+    return () => { cancelled = true; };
+  }, []);
+
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
 

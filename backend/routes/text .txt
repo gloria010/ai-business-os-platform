@@ -1,0 +1,2 @@
+New file ProtectedRoute.tsx — reads state.user via useApp(), redirects if role doesn't match
+App.tsx — wrap /businesses and /admin routes with ProtectedRoute

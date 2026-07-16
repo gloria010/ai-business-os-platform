@@ -5,6 +5,8 @@ import session from "express-session";
 
 import registerRoute from "./routes/register.js";
 import loginRoute from "./routes/login.js";
+import companiesRoute from "./routes/companies.js"; // new
+import { initSchema } from "./db.js"; // <-- adjust path to wherever your schema file actually lives
 
 dotenv.config();
 
@@ -30,11 +32,20 @@ app.use(session({
 
 app.use("/api", registerRoute);
 app.use("/api", loginRoute);
+app.use("/api", companiesRoute); // new
 
 app.get("/", (req, res) => {
     res.send("Backend server is working");
 });
 
-app.listen(5000, () => {
-    console.log("Server running on port 5000");
-});
+// Initialize DB schema before accepting requests
+initSchema()
+    .then(() => {
+        app.listen(5000, () => {
+            console.log("Server running on port 5000");
+        });
+    })
+    .catch((err) => {
+        console.error("Failed to initialize database schema:", err);
+        process.exit(1);
+    });

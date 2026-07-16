@@ -26,7 +26,6 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import FeedbackPage from "./pages/FeedbackPage";
 
-
 //Businesses
 import Dashboard from './pages/Businesses/Dashboard';
 import HR from './pages/Businesses/HR';
@@ -34,7 +33,6 @@ import Employees from './pages/Businesses/Employees';
 import Sales from "./pages/Businesses/Sales";
 import Analytics from './pages/Businesses/Analytics';
 import Inventory from "./pages/Businesses/Inventory";
-
 
 // Business Dashboard
 import BusinessDashboard from './pages/business/BusinessDashboard';
@@ -47,6 +45,7 @@ import BusinessInsights from './pages/business/BusinessInsights';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminApprovals from './pages/admin/AdminApprovals';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+
 //footer
 import SubscriptionPage from './pages/SubscriptionPage';
 import SubscriptionCheckoutPage from './pages/SubscriptionCheckoutPage';
@@ -77,18 +76,14 @@ export default function App() {
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/feedback" element={<FeedbackPage />} />
 
-                        {/* Businesses Workspace */}
-<Route path="/businesses/:company/dashboard" element={<Dashboard />} />
-<Route
-  path="/businesses/:company/ceo"
-  element={<BusinessDashboard />}
-/>
-<Route path="/businesses/:company/hr" element={<HR />} />
-<Route path="/businesses/:company/employees" element={<Employees />} />
-<Route path="/businesses/:company/sales" element={<Sales />} />
-<Route path="/businesses/:company/analytics" element={<Analytics />} />
-<Route path="/businesses/:company/inventory" element={<Inventory />}/>
-
+            {/* Businesses Workspace */}
+            <Route path="/businesses/:company/dashboard" element={<Dashboard />} />
+            <Route path="/businesses/:company/ceo" element={<BusinessDashboard />} />
+            <Route path="/businesses/:company/hr" element={<HR />} />
+            <Route path="/businesses/:company/employees" element={<Employees />} />
+            <Route path="/businesses/:company/sales" element={<Sales />} />
+            <Route path="/businesses/:company/analytics" element={<Analytics />} />
+            <Route path="/businesses/:company/inventory" element={<Inventory />} />
 
             {/* Consumer Dashboard */}
             <Route path="/dashboard" element={<ConsumerDashboard />} />
@@ -108,27 +103,19 @@ export default function App() {
             <Route path="/business/settings" element={<ProfilePage />} />
 
             {/* Admin Dashboard */}
-<Route path="/admin" element={<AdminDashboard />} />
-<Route path="/admin/consumers" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/consumers" element={<AdminDashboard />} />
+            <Route path="/admin/orders" element={<AdminDashboard />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            <Route path="/admin/approvals" element={<AdminApprovals />} />
+            <Route path="/admin/reports" element={<AdminAnalytics />} />
+            <Route path="/admin/settings" element={<ProfilePage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-<Route path="/admin/orders" element={<AdminDashboard />} />
-<Route path="/admin/analytics" element={<AdminAnalytics />} />
-<Route path="/admin/approvals" element={<AdminApprovals />} />
-<Route path="/admin/reports" element={<AdminAnalytics />} />
-<Route path="/admin/settings" element={<ProfilePage />} />
-<Route path="/admin/dashboard" element={<AdminDashboard />} />
+            {/* Footer */}
+            <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/subscription/checkout" element={<SubscriptionCheckoutPage />} />
 
-<Route path="/businesses" element={<BusinessesPage />} />
-<Route path="/categories" element={<CategoriesPage />} />
-<Route path="/products" element={<ProductsPage/>} />
-
- {/* Footer */}
-<Route path="/subscription" element={<SubscriptionPage />} />
-<Route
-  path="/subscription/checkout"
-  element={<SubscriptionCheckoutPage />}
-/>
-            
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <AIChatWidget />

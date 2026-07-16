@@ -1,43 +1,151 @@
 import express from "express";
-import db from "./db.js";
+import pool from "../db.js";
 
 const router = express.Router();
 
-// Register API
-router.post("/register", (req, res) => {
+// Generates a short unique business id e.g. BIZ-7F3K9A2
+function generateBusinessId() {
+  const rand = Math.random().toString(36).slice(2, 9).toUpperCase();
+  return `BIZ-${rand}`;
+}
 
-    console.log("Received:", req.body);
+// Generates an 8-digit numeric company password, e.g. "48213967"
+function generateCompanyPassword() {
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
+}
 
-    const { name, email, phone, company, password, role } = req.body;
+router.post("/register", async (req, res) => {
+  console.log("Received:", req.body);
 
-    const sql = `
-    INSERT INTO users
-    (name,email,phone,company,password,role)
-    VALUES(?,?,?,?,?,?)
-    `;
+  const {
+    name,
+    email,
+    phone,
+    company,
+    businessCategory,
+    employeeRole,
+    pincode, // optional - see note in chat about adding this field to the form
+    password,
+    role,
+  } = req.body;
 
-    db.query(
-        sql,
-        [name, email, phone, company, password, role],
-        (err, result) => {
+  if (!name || !email || !phone || !password || !role) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing required fields",
+    });
+  }
 
-            if (err) {
-                console.error(err);
-                return res.status(500).json({
-                    success: false,
-                    message: err.message
-                });
-            }
+  const conn = await pool.getConnection();
 
-            res.json({
-                success: true,
-                message: "User registered successfully",
-                id: result.insertId
-            });
+  try {
+    await conn.beginTransaction();
 
-        }
+    // Duplicate email check up front for a clean error message
+    const [existing] = await conn.query(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
     );
+    if (existing.length > 0) {
+      await conn.rollback();
+      return res.status(409).json({
+        success: false,
+        message: "An account with this email already exists",
+      });
+    }
 
+    const [userResult] = await conn.query(
+      `INSERT INTO users (name, email, phone, password, role)
+       VALUES (?, ?, ?, ?, ?)`,
+      [name, email, phone, password, role]
+    );
+    const userId = userResult.insertId;
+
+    let companyPassword = null; // only set for business_owner, returned in the response below
+
+    if (role === "business_owner") {
+      if (!company || !businessCategory) {
+        await conn.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Company name and business category are required",
+        });
+      }
+
+      const [companyExists] = await conn.query(
+        "SELECT id FROM business_owners WHERE company = ?",
+        [company]
+      );
+      if (companyExists.length > 0) {
+        await conn.rollback();
+        return res.status(409).json({
+          success: false,
+          message: "A business with this company name is already registered",
+        });
+      }
+
+      const businessId = generateBusinessId();
+      companyPassword = generateCompanyPassword();
+
+      await conn.query(
+     `INSERT INTO business_owners
+     (user_id, business_id, company, business_category, subscription, subscription_type, pincode, company_password)
+      VALUES (?, ?, ?, ?, NULL, NULL, ?, ?)`,
+     [userId, businessId, company, businessCategory, pincode || null, companyPassword]
+    );
+    }
+
+    if (role === "employee") {
+      if (!company || !employeeRole) {
+        await conn.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Company and role are required",
+        });
+      }
+
+      // Only allow employees to attach to a company that is actually registered
+      const [ownerRows] = await conn.query(
+        "SELECT id FROM business_owners WHERE company = ?",
+        [company]
+      );
+
+      if (ownerRows.length === 0) {
+        await conn.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Selected company is not a registered business",
+        });
+      }
+
+      await conn.query(
+        `INSERT INTO employees (user_id, business_owner_id, employee_role)
+         VALUES (?, ?, ?)`,
+        [userId, ownerRows[0].id, employeeRole]
+      );
+    }
+
+    await conn.commit();
+
+    res.json({
+      success: true,
+      message:
+        role === "business_owner"
+          ? `User registered successfully. Your company password is ${companyPassword} — keep it safe, you'll need it for company-level access.`
+          : "User registered successfully",
+      id: userId,
+      ...(companyPassword ? { companyPassword } : {}),
+    });
+  } catch (err) {
+    await conn.rollback();
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  } finally {
+    conn.release();
+  }
 });
 
 export default router;

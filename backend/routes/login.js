@@ -1,9 +1,9 @@
 import express from "express";
-import db from "./db.js";
+import pool from "../db.js";
 
 const router = express.Router();
 
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
     console.log("=== LOGIN REQUEST RECEIVED ===");
     console.log("Request body:", req.body);
 
@@ -20,13 +20,9 @@ router.post("/login", (req, res) => {
         });
     }
 
-    const sql = "SELECT * FROM users WHERE email = ?";
-
-    db.query(sql, [email], (err, results) => {
-        if (err) {
-            console.error("DB error:", err);
-            return res.status(500).json({ success: false, message: err.message });
-        }
+    try {
+        const sql = "SELECT * FROM users WHERE email = ?";
+        const [results] = await pool.query(sql, [email]);
 
         console.log("DB results:", results);
 
@@ -60,7 +56,10 @@ router.post("/login", (req, res) => {
             message: "Login successful",
             user: req.session.user
         });
-    });
+    } catch (err) {
+        console.error("DB error:", err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
 });
 
 router.get("/session", (req, res) => {

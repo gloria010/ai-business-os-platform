@@ -112,7 +112,7 @@ export interface User {
   email: string;
   phone: string;
   avatar: string;
-  role: 'consumer' | 'business_owner' | 'admin';
+  role: 'consumer' | 'business_owner' |'employee'| 'admin';
   joinedAt: string;
   addresses: Address[];
   preferences: UserPreferences;

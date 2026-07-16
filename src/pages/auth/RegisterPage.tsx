@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// changed mock data into real bussiness that as regidted in and admin
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -30,9 +31,22 @@ export default function RegisterPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [companies, setCompanies] = useState<{ id: number; company: string }[]>([]);
 
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/companies')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) setCompanies(data.companies);
+      })
+      .catch(() => {
+        showToast('Could not load company list', 'error', 'Error');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const update = (k: string, v: string | boolean) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -49,10 +63,10 @@ export default function RegisterPage() {
       e.email = 'Invalid email';
 
     if (!form.phone.trim()) {
-  e.phone = 'Phone number is required';
-} else if (!/^[6-9]\d{9}$/.test(form.phone)) {
-  e.phone = 'Enter a valid 10-digit phone number';
-}
+      e.phone = 'Phone number is required';
+    } else if (!/^[6-9]\d{9}$/.test(form.phone)) {
+      e.phone = 'Enter a valid 10-digit phone number';
+    }
 
     if (form.role === 'business_owner' && !form.company.trim())
       e.company = 'Company name is required';
@@ -61,10 +75,10 @@ export default function RegisterPage() {
       e.businessCategory = 'Business category is required';
 
     if (form.role === 'employee' && !form.company)
-  e.company = 'Please select a company';
+      e.company = 'Please select a company';
 
-if (form.role === 'employee' && !form.employeeRole)
-  e.employeeRole = 'Please select a role';
+    if (form.role === 'employee' && !form.employeeRole)
+      e.employeeRole = 'Please select a role';
 
     if (!form.password || form.password.length < 8)
       e.password = 'Minimum 8 characters';
@@ -100,15 +114,15 @@ if (form.role === 'employee' && !form.employeeRole)
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-  name: form.name,
-  email: form.email,
-  phone: form.phone,
-  company: form.company,
-  businessCategory: form.businessCategory,
-  employeeRole: form.employeeRole,
-  password: form.password,
-  role: form.role
-})
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            company: form.company,
+            businessCategory: form.businessCategory,
+            employeeRole: form.employeeRole,
+            password: form.password,
+            role: form.role
+          })
         }
       );
 
@@ -122,15 +136,23 @@ if (form.role === 'employee' && !form.employeeRole)
         );
         return;
       }
-
-      showToast(
-        'Account created! Welcome to AIBizOS!',
-        'success',
-        'Registration Successful'
-      );
-
-      navigate('/login');
-    } catch (error) {
+      //change for database
+      if (data.companyPassword) {
+        showToast(
+          `Account created! Your company password is ${data.companyPassword} — save it now, you'll need it for company-level access.`,
+          'success',
+          'Registration Successful'
+        );
+        setTimeout(() => navigate('/login'), 10000);
+      } else {
+        showToast(
+          'Account created! Welcome to AIBizOS!',
+          'success',
+          'Registration Successful'
+        );
+        navigate('/login');
+      }
+    }catch (error) {
       showToast(
         error instanceof Error
           ? error.message
@@ -144,7 +166,7 @@ if (form.role === 'employee' && !form.employeeRole)
   };
 
   return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4 py-12">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8">
         <div className="flex items-center justify-between mb-8">
           <Link to="/" className="flex items-center gap-2">
@@ -189,11 +211,11 @@ if (form.role === 'employee' && !form.employeeRole)
               desc: 'Grow your business',
             },
             {
-    value: 'employee',
-    label: 'Employee',
-    icon: User,
-    desc: 'Join a company'
-  }
+              value: 'employee',
+              label: 'Employee',
+              icon: User,
+              desc: 'Join a company'
+            }
           ].map((r) => (
             <button
               key={r.value}
@@ -312,22 +334,23 @@ if (form.role === 'employee' && !form.employeeRole)
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
 
               <input
-  value={form.phone}
-  onChange={(e) => update('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-  placeholder="+91 9876543210"
-  maxLength={10}
-  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    errors.phone ? 'border-red-400' : 'border-slate-200'
-  }`}
-/>
+                value={form.phone}
+                onChange={(e) => update('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="+91 9876543210"
+                maxLength={10}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.phone ? 'border-red-400' : 'border-slate-200'
+                }`}
+              />
             </div>
             {errors.phone && (
-  <p className="text-red-500 text-xs mt-1">
-    {errors.phone}
-  </p>
-)}
+              <p className="text-red-500 text-xs mt-1">
+                {errors.phone}
+              </p>
+            )}
           </div>
-                    {/* Business Owner Fields */}
+
+          {/* Business Owner Fields */}
           {form.role === 'business_owner' && (
             <>
               {/* Company Name */}
@@ -379,50 +402,17 @@ if (form.role === 'employee' && !form.employeeRole)
                     }`}
                   >
                     <option value="">Select Business Category</option>
-
-                    <option value="Electronics">
-                      Electronics
-                    </option>
-
-                    <option value="Fashion">
-                      Fashion
-                    </option>
-
-                    <option value="Furniture">
-                      Furniture
-                    </option>
-
-                    <option value="Sports">
-                      Sports
-                    </option>
-
-                    <option value="Beauty & Wellness">
-                      Beauty & Wellness
-                    </option>
-
-                    <option value="Agriculture">
-                      Agriculture
-                    </option>
-
-                    <option value="Healthcare">
-                      Healthcare
-                    </option>
-
-                    <option value="Education">
-                      Education
-                    </option>
-
-                    <option value="Grocery">
-                      Grocery
-                    </option>
-
-                    <option value="Restaurant">
-                      Restaurant
-                    </option>
-
-                    <option value="Other">
-                      Other
-                    </option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Fashion">Fashion</option>
+                    <option value="Furniture">Furniture</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Beauty & Wellness">Beauty & Wellness</option>
+                    <option value="Agriculture">Agriculture</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Education">Education</option>
+                    <option value="Grocery">Grocery</option>
+                    <option value="Restaurant">Restaurant</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
 
@@ -435,97 +425,79 @@ if (form.role === 'employee' && !form.employeeRole)
             </>
           )}
 
+          {/* Employee Fields */}
           {form.role === 'employee' && (
-  <>
-    {/* Company */}
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1.5">
-        Company
-      </label>
+            <>
+              {/* Company */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Company
+                </label>
 
-      <div className="relative">
-        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
 
-        <select
-          value={form.company}
-          onChange={(e) => update('company', e.target.value)}
-          className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.company
-              ? 'border-red-400'
-              : 'border-slate-200'
-          }`}
-        >
-          <option value="">Select Company</option>
+                  <select
+                    value={form.company}
+                    onChange={(e) => update('company', e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.company
+                        ? 'border-red-400'
+                        : 'border-slate-200'
+                    }`}
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.company}>
+                        {c.company}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-          <option>TechZone Store</option>
-          <option>Urban Fashion Hub</option>
-          <option>Luxe Living Furniture</option>
-          <option>ProSports Gear</option>
-          <option>Glow Beauty Studio</option>
-          <option>Green Harvest Farm</option>
-          <option>Medicare Plus</option>
-          <option>EduLearn Academy</option>
-          <option>FreshMart Grocery</option>
-          <option>NexGen Mobiles</option>
-          <option>Bella Boutique</option>
-          <option>The Gourmet Kitchen</option>
-          <option>Others</option>
-        </select>
-      </div>
+                {errors.company && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.company}
+                  </p>
+                )}
+              </div>
 
-      {errors.company && (
-        <p className="text-red-500 text-xs mt-1">
-          {errors.company}
-        </p>
-      )}
-    </div>
+              {/* Employee Role */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Department
+                </label>
 
-    {/* Employee Role */}
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1.5">
-        Role
-      </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
 
-      <div className="relative">
-        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <select
+                    value={form.employeeRole}
+                    onChange={(e) => update('employeeRole', e.target.value)}
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.employeeRole
+                        ? 'border-red-400'
+                        : 'border-slate-200'
+                    }`}
+                  >
+                    <option value="">Select Department</option>
+                    <option>HR</option>
+                    <option>Sales</option>
+                    <option>Inventory</option>
+                    <option>Other</option>
+                  </select>
+                </div>
 
-        <select
-          value={form.employeeRole}
-          onChange={(e) => update('employeeRole', e.target.value)}
-          className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.employeeRole
-              ? 'border-red-400'
-              : 'border-slate-200'
-          }`}
-        >
-          <option value="">Select Role</option>
+                {errors.employeeRole && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.employeeRole}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
-          <option>HR Manager</option>
-          <option>HR Executive</option>
-          <option>Recruiter</option>
-          <option>Sales Manager</option>
-          <option>Sales Executive</option>
-          <option>Sales Associate</option>
-          <option>Inventory Manager</option>
-          <option>Inventory Executive</option>
-          <option>Store Manager</option>
-          <option>Marketing Executive</option>
-          <option>Customer Support Executive</option>
-          <option>Accountant</option>
-          <option>Operations Executive</option>
-          <option>Software Engineer</option>
-        </select>
-      </div>
-
-      {errors.employeeRole && (
-        <p className="text-red-500 text-xs mt-1">
-          {errors.employeeRole}
-        </p>
-      )}
-    </div>
-  </>
-)}
-                    <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Password
@@ -606,17 +578,11 @@ if (form.role === 'employee' && !form.employeeRole)
 
               <span className="text-sm text-slate-600">
                 I agree to the{' '}
-                <Link
-                  to="#"
-                  className="text-blue-600 hover:underline"
-                >
+                <Link to="#" className="text-blue-600 hover:underline">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link
-                  to="#"
-                  className="text-blue-600 hover:underline"
-                >
+                <Link to="#" className="text-blue-600 hover:underline">
                   Privacy Policy
                 </Link>
               </span>

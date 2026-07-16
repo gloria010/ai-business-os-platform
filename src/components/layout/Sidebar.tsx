@@ -1,10 +1,9 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Home, Package, ShoppingBag, Heart, Bell, User, Settings, LayoutDashboard,
-  BarChart2, Users, Tag, FileText, Shield, Star, MessageSquare, Truck,
-  PlusCircle, ClipboardList, TrendingUp, Lightbulb, LogOut, X
+  BarChart2, Users, Tag, FileText, Shield, Star, Truck,
+  ClipboardList, TrendingUp, Lightbulb, LogOut, X, LucideIcon
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -14,7 +13,14 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const consumerLinks = [
+interface NavLink {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  badge?: boolean;
+}
+
+const consumerLinks: NavLink[] = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
   { href: '/dashboard/orders', icon: ShoppingBag, label: 'My Orders' },
   { href: '/wishlist', icon: Heart, label: 'Wishlist' },
@@ -23,22 +29,22 @@ const consumerLinks = [
   { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
-const businessLinks = [
+const businessLinks: NavLink[] = [
   { href: '/business', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/businesses', icon: Shield, label: 'Businesses' },
   { href: '/business/products', icon: Package, label: 'Products' },
   { href: '/business/orders', icon: ShoppingBag, label: 'Orders' },
   { href: '/business/inventory', icon: ClipboardList, label: 'Inventory' },
   { href: '/business/customers', icon: Users, label: 'Customers' },
   { href: '/business/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/business/insights', icon: Lightbulb, label: 'AI Insights' },
-  
 ];
 
-const adminLinks = [
+const adminLinks: NavLink[] = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { href: "/businesses", icon: Shield, label: "Businesses" },
-{ href: "/products", icon: Package, label: "Products" },
-{ href: "/categories", icon: Tag, label: "Categories" },
+  { href: "/products", icon: Package, label: "Products" },
+  { href: "/categories", icon: Tag, label: "Categories" },
   { href: '/admin/consumers', icon: Users, label: 'Consumers' },
   { href: '/admin/orders', icon: Truck, label: 'Orders' },
   { href: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
@@ -46,10 +52,31 @@ const adminLinks = [
   { href: '/admin/approvals', icon: Star, label: 'Approvals' },
 ];
 
+// Roles allowed to see specific hrefs, regardless of which link-set is passed in.
+// Anything not listed here is shown to everyone the base link-set already includes.
+const BUSINESSES_ALLOWED = ['business_owner', 'employee', 'admin'];
+const ADMIN_ONLY_PREFIXES = ['/admin'];
+
 export default function Sidebar({ role = 'consumer', isOpen = true, onClose }: SidebarProps) {
   const { state, dispatch } = useApp();
   const location = useLocation();
-  const links = role === 'business' ? businessLinks : role === 'admin' ? adminLinks : consumerLinks;
+  const actualRole = state.user?.role; // the REAL logged-in role, from session/login
+//db part
+  console.log('SIDEBAR DEBUG — actualRole:', actualRole, 'full user:', state.user);
+  const baseLinks = role === 'business' ? businessLinks : role === 'admin' ? adminLinks : consumerLinks;
+
+  // Safety filter: even if a page passes the wrong `role` prop, links are
+  // still gated by the actual logged-in user's role.
+  const links = baseLinks.filter(link => {
+    if (link.href === '/businesses') {
+      return actualRole ? BUSINESSES_ALLOWED.includes(actualRole) : false;
+    }
+    if (ADMIN_ONLY_PREFIXES.some(prefix => link.href.startsWith(prefix))) {
+      return actualRole === 'admin';
+    }
+    return true;
+  });
+
   const unreadNotifs = state.notifications.filter(n => !n.read).length;
 
   const roleColors = {

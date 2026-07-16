@@ -5,6 +5,8 @@ import { Search, ShoppingCart, Bell, User, Menu, X, Zap, Heart, ChevronDown } fr
 import { useApp } from '../../contexts/AppContext';
 import Badge from '../ui/Badge';
 
+const BUSINESSES_ALLOWED = ['business_owner', 'employee', 'admin'];
+
 export default function Navbar() {
   const { state, dispatch } = useApp();
   const [scrolled, setScrolled] = useState(false);
@@ -15,6 +17,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const cartCount = state.cart.reduce((s, i) => s + i.quantity, 0);
   const unreadNotifs = state.notifications.filter(n => !n.read).length;
+  const role = state.user?.role;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -25,8 +28,8 @@ export default function Navbar() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/categories', label: 'Categories' },
-    { href: '/businesses', label: 'Businesses' },
-    { href: "/admin", label: "Admin" },
+    ...(role && BUSINESSES_ALLOWED.includes(role) ? [{ href: '/businesses', label: 'Businesses' }] : []),
+    ...(role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
     { href: '/products', label: 'Products' },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
