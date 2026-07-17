@@ -31,12 +31,11 @@ CREATE TABLE IF NOT EXISTS business_owners (
   business_id VARCHAR(20) NOT NULL UNIQUE,
   company VARCHAR(150) NOT NULL UNIQUE,
   business_category VARCHAR(100) NOT NULL,
-  subscription VARCHAR(20) NOT NULL DEFAULT 'trial',
-  subscription_type VARCHAR(20) NOT NULL DEFAULT 'monthly',
+  subscription VARCHAR(20) DEFAULT NULL,
+  subscription_date VARCHAR(20) DEFAULT NULL,
   pincode VARCHAR(10) DEFAULT NULL,
   company_password VARCHAR(8) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

@@ -113,7 +113,7 @@ router.post("/register", async (req, res) => {
       // this business owner via PATCH /api/admin/business-owners/:id/approve
       await conn.query(
         `INSERT INTO business_owners
-        (user_id, business_id, company, business_category, subscription, subscription_type, pincode, company_password)
+        (user_id, business_id, company, business_category, subscription, subscription_date, pincode, company_password)
          VALUES (?, ?, ?, ?, NULL, NULL, ?, ?)`,
         [userId, businessId, company, businessCategory, pincode || null, companyPassword]
       );

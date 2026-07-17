@@ -5,9 +5,11 @@ import session from "express-session";
 
 import registerRoute from "./routes/register.js";
 import loginRoute from "./routes/login.js";
+import businessRoute from "./routes/business.js";
 import companiesRoute from "./routes/companies.js"; // new
 import { initSchema } from "./db.js"; // <-- adjust path to wherever your schema file actually lives
 import adminRoute from "./routes/admin.js";
+import subscribeRoutes from "./routes/subscribe.js";
 
 dotenv.config();
 
@@ -34,7 +36,9 @@ app.use(session({
 app.use("/api", registerRoute);
 app.use("/api", loginRoute);
 app.use("/api", companiesRoute); 
+app.use("/api", businessRoute);
 app.use("/api", adminRoute);
+app.use("/api", subscribeRoutes);
 
 app.get("/", (req, res) => {
     res.send("Backend server is working");

@@ -1,13 +1,17 @@
+// GET /api/companies -> list of registered businesses for the employee dropdown
 import express from "express";
 import pool from "../db.js";
 
 const router = express.Router();
 
-// GET /api/companies -> list of registered businesses for the employee dropdown
+
 router.get("/companies", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT id, company, business_category FROM business_owners ORDER BY company ASC"
+      `SELECT id, company, business_category
+       FROM business_owners
+       WHERE status = 'approved'
+       ORDER BY company ASC`
     );
     res.json({ success: true, companies: rows });
   } catch (err) {

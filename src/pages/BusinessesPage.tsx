@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -6,7 +6,8 @@ import {
   Lock,
   Eye,
   EyeOff,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 
 import PublicLayout from "../components/layout/PublicLayout";
@@ -14,55 +15,48 @@ import PublicLayout from "../components/layout/PublicLayout";
 interface Company {
   id: number;
   name: string;
-  logo: string;
-  workspace: string;
+  category: string;
+  workspace: string; // business_id slug
 }
 
-const companies: Company[] = [
-  {
-    id: 1,
-    name: "TechZone Store",
-    logo: "https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=100",
-    workspace: "techzone-store",
-  },
-  {
-    id: 2,
-    name: "Urban Fashion Hub",
-    logo: "https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=100",
-    workspace: "urban-fashion-hub",
-  },
-  {
-    id: 3,
-    name: "Luxe Living Furniture",
-    logo: "https://images.pexels.com/photos/1866149/pexels-photo-1866149.jpeg?auto=compress&cs=tinysrgb&w=100",
-    workspace: "Furniture & Home",
-  },
-  {
-    id: 4,
-    name: "ProSports Gear",
-    logo: "https://images.pexels.com/photos/248547/pexels-photo-248547.jpeg?auto=compress&cs=tinysrgb&w=100",
-    workspace: "Sports & Fitness",
-  },
-  {
-    id: 5,
-    name:"Glow Beauty Studio",
-    logo: "https://images.pexels.com/photos/2253834/pexels-photo-2253834.jpeg?auto=compress&cs=tinysrgb&w=100",
-    workspace: "Beauty & Cosmetics",
-  },
-];
+// Point this at your API's base URL
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function BusinessesPage() {
   const navigate = useNavigate();
+
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const [selectedCompany, setSelectedCompany] =
     useState<Company | null>(null);
 
   const [password, setPassword] = useState("");
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/businesses`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || "Failed to load businesses");
+        }
+        setCompanies(data.businesses);
+      } catch (err) {
+        setLoadError("Couldn't load businesses. Please try again shortly.");
+      } finally {
+        setLoadingCompanies(false);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
 
   const openWorkspace = (company: Company) => {
     setSelectedCompany(company);
@@ -76,21 +70,43 @@ export default function BusinessesPage() {
     setError("");
   };
 
-  const login = () => {
-  if (!password.trim()) {
-    setError("Please enter your password");
-    return;
-  }
-
-  navigate(
-    `/businesses/${selectedCompany?.workspace}/dashboard`,
-    {
-      state: {
-        company: selectedCompany,
-      },
+  const login = async () => {
+    if (!password.trim()) {
+      setError("Please enter your password");
+      return;
     }
-  );
-};
+    if (!selectedCompany) return;
+
+    setLoggingIn(true);
+    setError("");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/businesses/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          workspace: selectedCompany.workspace,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.message || "Login failed");
+        return;
+      }
+
+      navigate(`/businesses/${data.company.workspace}/dashboard`, {
+        state: { company: data.company },
+      });
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoggingIn(false);
+    }
+  };
 
   return (
     <PublicLayout>
@@ -125,62 +141,76 @@ export default function BusinessesPage() {
 
         <div className="max-w-6xl mx-auto px-6 py-12">
 
-          {/* Company List Starts Here */}
-                    <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900">
+          {loadingCompanies && (
+            <div className="flex items-center gap-3 text-slate-400 py-12 justify-center">
+              <Loader2 className="animate-spin" size={20} />
+              Loading businesses...
+            </div>
+          )}
 
-            {companies.map((company, index) => (
+          {!loadingCompanies && loadError && (
+            <div className="text-red-400 text-center py-12">{loadError}</div>
+          )}
 
-              <motion.div
-                key={company.id}
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.08 }}
-                whileHover={{
-                  backgroundColor: "rgba(255,255,255,0.03)",
-                }}
-                className={`flex flex-col md:flex-row md:items-center md:justify-between px-6 py-6 transition-all ${
-                  index !== companies.length - 1
-                    ? "border-b border-slate-800"
-                    : ""
-                }`}
-              >
-                <div className="flex items-center gap-5">
+          {!loadingCompanies && !loadError && companies.length === 0 && (
+            <div className="text-slate-400 text-center py-12">
+              No approved businesses yet.
+            </div>
+          )}
 
-                  <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center p-2">
-                    <img
-                      src={company.logo}
-                      alt={company.name}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
+          {!loadingCompanies && !loadError && companies.length > 0 && (
+            <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900">
 
-                  <div>
+              {companies.map((company, index) => (
 
-                    <h2 className="text-2xl font-semibold">
-                      {company.name}
-                    </h2>
-
-                    <p className="text-slate-400 mt-1">
-                      Secure AI Business Workspace
-                    </p>
-
-                  </div>
-
-                </div>
-
-                <button
-                  onClick={() => openWorkspace(company)}
-                  className="mt-5 md:mt-0 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold transition-all"
+                <motion.div
+                  key={company.id}
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.08 }}
+                  whileHover={{
+                    backgroundColor: "rgba(255,255,255,0.03)",
+                  }}
+                  className={`flex flex-col md:flex-row md:items-center md:justify-between px-6 py-6 transition-all ${
+                    index !== companies.length - 1
+                      ? "border-b border-slate-800"
+                      : ""
+                  }`}
                 >
-                  Open Workspace
-                  <ArrowRight size={18} />
-                </button>
+                  <div className="flex items-center gap-5">
 
-              </motion.div>
+                    <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-2xl font-bold">
+                      {company.name.charAt(0).toUpperCase()}
+                    </div>
 
-            ))}
+                    <div>
 
-          </div>
+                      <h2 className="text-2xl font-semibold">
+                        {company.name}
+                      </h2>
+
+                      <p className="text-slate-400 mt-1">
+                        {company.category}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <button
+                    onClick={() => openWorkspace(company)}
+                    className="mt-5 md:mt-0 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold transition-all"
+                  >
+                    Open Workspace
+                    <ArrowRight size={18} />
+                  </button>
+
+                </motion.div>
+
+              ))}
+
+            </div>
+          )}
 
         </div>
 
@@ -225,7 +255,8 @@ export default function BusinessesPage() {
                   <p className="text-slate-400 mb-6">
                     Enter your workspace password.
                   </p>
-                                    <div className="relative">
+
+                  <div className="relative">
 
                     <Lock
                       size={18}
@@ -272,10 +303,17 @@ export default function BusinessesPage() {
 
                   <button
                     onClick={login}
-                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 transition rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
+                    disabled={loggingIn}
+                    className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 transition rounded-xl py-3 font-semibold flex items-center justify-center gap-2"
                   >
-                    Open Workspace
-                    <ArrowRight size={18} />
+                    {loggingIn ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <>
+                        Open Workspace
+                        <ArrowRight size={18} />
+                      </>
+                    )}
                   </button>
 
                 </div>
