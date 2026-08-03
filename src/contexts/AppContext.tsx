@@ -22,6 +22,7 @@ type Action =
   | { type: 'ADD_TO_CART'; payload: { product: Product; quantity?: number } }
   | { type: 'REMOVE_FROM_CART'; payload: string }
   | { type: 'UPDATE_CART_QUANTITY'; payload: { productId: string; quantity: number } }
+  | { type: 'LOAD_CART'; payload: CartItem[] }
   | { type: 'CLEAR_CART' }
   | { type: 'TOGGLE_WISHLIST'; payload: string }
   | { type: 'SET_SEARCH'; payload: string }
@@ -76,6 +77,8 @@ function appReducer(state: AppState, action: Action): AppState {
           i.productId === action.payload.productId ? { ...i, quantity: action.payload.quantity } : i
         ).filter(i => i.quantity > 0),
       };
+    case 'LOAD_CART':
+      return { ...state, cart: action.payload };
     case 'CLEAR_CART':
       return { ...state, cart: [] };
     case 'TOGGLE_WISHLIST':
@@ -141,6 +144,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkSession();
     return () => { cancelled = true; };
   }, []);
+
+  // Once we know the user is authenticated, load their saved cart from the
+  // server and rehydrate each row with full product details (name, price,
+  // images, businessName) since cart_items only stores productId + quantity.
+  useEffect(() => {
+    if (!state.isAuthenticated) return;
+    let cancelled = false;
+
+    async function loadCart() {
+      try {
+        const res = await fetch('http://localhost:5000/api/user/cart', {
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.items)) return;
+
+        const resolved = await Promise.all(
+          data.items.map(async ({ productId, quantity }: { productId: string; quantity: number }) => {
+            try {
+              const pRes = await fetch(`http://localhost:5000/api/user/products/${productId}`, {
+                credentials: 'include',
+              });
+              const pData = await pRes.json();
+              if (!pData.success || !pData.product) return null;
+
+              const p = pData.product;
+              const product: Product = {
+                ...p,
+                images: p.image ? [p.image] : [],
+                businessName: p.company,
+              };
+
+              return { productId, product, quantity } as CartItem;
+            } catch (err) {
+              console.error(`[Cart] Failed to resolve product ${productId}:`, err);
+              return null;
+            }
+          })
+        );
+
+        if (!cancelled) {
+          const validItems = resolved.filter((i): i is CartItem => i !== null);
+          dispatch({ type: 'LOAD_CART', payload: validItems });
+        }
+      } catch (err) {
+        console.error('[Cart] Failed to load cart:', err);
+      }
+    }
+
+    loadCart();
+    return () => { cancelled = true; };
+  }, [state.isAuthenticated]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

@@ -5,13 +5,36 @@ import session from "express-session";
 
 import registerRoute from "./routes/register.js";
 import loginRoute from "./routes/login.js";
+
+//business
 import businessRoute from "./routes/business.js";
 import companiesRoute from "./routes/companies.js"; // new
 import { initSchema } from "./db.js"; // <-- adjust path to wherever your schema file actually lives
 import adminRoute from "./routes/admin.js";
 import subscribeRoutes from "./routes/subscribe.js";
+import inventoryRouter from "./routes/inventory.js";
+import messagesRouter from "./routes/messages.js";
+import hrRouter from "./routes/hr.js";
+import employeeRouter from "./routes/employee.js";
+import salesRouter from "./routes/sales.js";
+import ceoRouter from "./routes/ceo.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+
+// users
+import userProductsRouter from "./routes/user/products.js";
+import userWishlistRouter from "./routes/user/wishlist.js";
+import cartRoutes from './routes/user/cartRoutes.js';
+import feedbackRoutes from './routes/user/feedback.js';
+import contactRoutes from './routes/user/contact.js';
+import userOrdersRoutes from "./routes/user/orders.js";
+import checkoutRoutes from "./routes/user/checkout.js";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -33,12 +56,33 @@ app.use(session({
     }
 }));
 
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 app.use("/api", registerRoute);
 app.use("/api", loginRoute);
+
+//business
 app.use("/api", companiesRoute); 
 app.use("/api", businessRoute);
 app.use("/api", adminRoute);
 app.use("/api", subscribeRoutes);
+app.use("/api/inventory", inventoryRouter);
+app.use("/api/messages", messagesRouter);
+app.use("/api/hr", hrRouter);
+app.use("/api/employee", employeeRouter);
+app.use("/api/sales", salesRouter);
+app.use("/api/ceo", ceoRouter);
+
+
+//users
+app.use("/api/user", userProductsRouter);
+app.use("/api/user", userWishlistRouter);
+app.use('/api/user', cartRoutes);
+app.use('/api/user', feedbackRoutes);
+app.use('/api/user', contactRoutes);
+app.use("/api/user/orders", userOrdersRoutes);
+app.use("/api/user/checkout", checkoutRoutes);
+
 
 app.get("/", (req, res) => {
     res.send("Backend server is working");

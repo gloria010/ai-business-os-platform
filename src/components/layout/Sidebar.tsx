@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Home, Package, ShoppingBag, Heart, Bell, User, Settings, LayoutDashboard,
   BarChart2, Users, Tag, FileText, Shield, Star, Truck,
-  ClipboardList, TrendingUp, Lightbulb, LogOut, X, LucideIcon
+  ClipboardList, TrendingUp, Lightbulb, LogOut, X, LucideIcon, MessageSquare
 } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 
@@ -36,6 +36,8 @@ const businessLinks: NavLink[] = [
   { href: '/business/orders', icon: ShoppingBag, label: 'Orders' },
   { href: '/business/inventory', icon: ClipboardList, label: 'Inventory' },
   { href: '/business/customers', icon: Users, label: 'Customers' },
+  { href: '/business/messages', icon: MessageSquare, label: 'Messages' },
+  { href: '/business/notifications', icon: Bell, label: 'Notifications', badge: false },
   { href: '/business/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/business/insights', icon: Lightbulb, label: 'AI Insights' },
 ];

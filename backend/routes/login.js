@@ -42,11 +42,55 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ success: false, message: "Invalid email or password" });
         }
 
+        // Resolve the business_id this user belongs to, so every downstream
+        // route (inventory, hr, sales, etc.) can look up the right
+        // per-department database off the session instead of trusting a
+        // client-supplied ?company= or ?business_id= query param.
+        let businessId = null;
+
+        if (user.role === "business_owner") {
+            const [ownerRows] = await pool.query(
+                "SELECT business_id FROM business_owners WHERE user_id = ?",
+                [user.id]
+            );
+            if (ownerRows.length > 0) {
+                businessId = ownerRows[0].business_id;
+            } else {
+                console.warn(
+                    `[Login] business_owner user_id=${user.id} has no matching business_owners row`
+                );
+            }
+        }
+
+        if (user.role === "employee") {
+            const [empRows] = await pool.query(
+                `SELECT bo.business_id
+                 FROM employees e
+                 JOIN business_owners bo ON bo.id = e.business_owner_id
+                 WHERE e.user_id = ?`,
+                [user.id]
+            );
+            if (empRows.length > 0) {
+                businessId = empRows[0].business_id;
+            } else {
+                console.warn(
+                    `[Login] employee user_id=${user.id} has no matching employees/business_owners row`
+                );
+            }
+        }
+
+        console.log("Resolved business_id for session:", businessId);
+
         req.session.user = {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role
+            role: user.role,
+            company: businessId, // the business_id, e.g. "BIZ-FUR-HOME" - used by
+                                  // downstream routes (see routes/inventory.js
+                                  // companyDb middleware) to resolve the correct
+                                  // per-company database. Kept as "company" to
+                                  // match existing route/middleware naming.
         };
 
         console.log("Login successful for:", user.email);

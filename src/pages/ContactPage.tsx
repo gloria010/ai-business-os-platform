@@ -16,9 +16,6 @@ import Footer from "../components/layout/Footer";
 
 export default function ContactPage() {
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
     subject: "",
     message: "",
   });
@@ -36,21 +33,6 @@ export default function ContactPage() {
   const validate = () => {
     const e: Record<string, string> = {};
 
-    if (!form.name.trim())
-      e.name = "Full name is required.";
-    else if (form.name.trim().length < 3)
-      e.name = "Please enter at least 3 characters.";
-
-    if (!form.email.trim())
-      e.email = "Email is required.";
-    else if (!/\S+@\S+\.\S+/.test(form.email))
-      e.email = "Please enter a valid email address.";
-
-    if (!form.phone.trim())
-      e.phone = "Phone number is required.";
-    else if (!/^[6-9]\d{9}$/.test(form.phone))
-      e.phone = "Please enter a valid 10-digit phone number.";
-
     if (!form.subject.trim())
       e.subject = "Subject is required.";
 
@@ -65,28 +47,41 @@ export default function ContactPage() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validate()) return;
 
-    setSuccess(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/user/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
 
-    setForm({
-      name: "",
-      email: "",
-      phone: "",
-      subject: "",
-      message: "",
-    });
+      if (!data.success) {
+        setErrors({ submit: data.message || "Failed to send message" });
+        return;
+      }
 
-    setErrors({});
+      setSuccess(true);
+
+      setForm({
+        subject: "",
+        message: "",
+      });
+
+      setErrors({});
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[Contact] Submit failed:", message);
+      setErrors({ submit: "Could not send message. Please try again." });
+    }
   };
 
   const isFormValid =
-    form.name.trim().length >= 3 &&
-    /\S+@\S+\.\S+/.test(form.email) &&
-    /^[6-9]\d{9}$/.test(form.phone) &&
     form.subject.trim() &&
     form.message.trim().length >= 15;
 
@@ -144,96 +139,22 @@ export default function ContactPage() {
 
             )}
 
+            {errors.submit && (
+
+              <div className="mb-8 rounded-2xl border border-red-300 bg-red-50 p-5 text-red-700">
+                {errors.submit}
+              </div>
+
+            )}
+
             <form
               onSubmit={handleSubmit}
               className="grid md:grid-cols-2 gap-6"
             >
 
-              {/* Full Name */}
-
-              <div>
-
-                <label className="block text-sm font-medium mb-2">
-                  Full Name
-                </label>
-
-                <input
-                  value={form.name}
-                  onChange={(e) => update("name", e.target.value)}
-                  placeholder="John Doe"
-                  className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.name
-                      ? "border-red-400"
-                      : "border-slate-200"
-                  }`}
-                />
-
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.name}
-                  </p>
-                )}
-
-              </div>
-
-              {/* Email */}
-
-              <div>
-
-                <label className="block text-sm font-medium mb-2">
-                  Email Address
-                </label>
-
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => update("email", e.target.value)}
-                  placeholder="you@example.com"
-                  className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.email
-                      ? "border-red-400"
-                      : "border-slate-200"
-                  }`}
-                />
-
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.email}
-                  </p>
-                )}
-
-              </div>
-
-              {/* Phone */}
-
-              <div>
-
-                <label className="block text-sm font-medium mb-2">
-                  Phone Number
-                </label>
-
-                <input
-                  value={form.phone}
-                  onChange={(e) => update("phone", e.target.value)}
-                  placeholder="9876543210"
-                  className={`w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.phone
-                      ? "border-red-400"
-                      : "border-slate-200"
-                  }`}
-                />
-
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-500">
-                    {errors.phone}
-                  </p>
-                )}
-
-              </div>
-
               {/* Subject */}
 
-              <div>
+              <div className="md:col-span-2">
 
                 <label className="block text-sm font-medium mb-2">
                   Subject

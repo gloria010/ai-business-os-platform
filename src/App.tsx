@@ -41,6 +41,9 @@ import BusinessOrders from './pages/business/BusinessOrders';
 import BusinessAnalytics from './pages/business/BusinessAnalytics';
 import BusinessInsights from './pages/business/BusinessInsights';
 
+import BusinessNotifications from './pages/business/BusinessNotifications';
+import BusinessMessages from './pages/business/BusinessMessages';
+
 // Admin Dashboard
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminApprovals from './pages/admin/AdminApprovals';
@@ -99,9 +102,10 @@ export default function App() {
             <Route path="/business/insights" element={<BusinessInsights />} />
             <Route path="/business/inventory" element={<BusinessProducts />} />
             <Route path="/business/customers" element={<BusinessDashboard />} />
-            <Route path="/business/notifications" element={<NotificationsPage />} />
             <Route path="/business/settings" element={<ProfilePage />} />
 
+<Route path="/business/notifications" element={<BusinessNotifications />}/>
+<Route path="/business/messages" element={<BusinessMessages />}/>
             {/* Admin Dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/consumers" element={<AdminDashboard />} />

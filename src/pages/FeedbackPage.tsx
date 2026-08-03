@@ -6,14 +6,35 @@ import Footer from "../components/layout/Footer";
 export default function FeedbackPage() {
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!feedback.trim()) return;
 
-    setSubmitted(true);
-    setFeedback("");
+    try {
+      const res = await fetch("http://localhost:5000/api/user/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message: feedback }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        setError(data.message || "Failed to submit feedback");
+        return;
+      }
+
+      setSubmitted(true);
+      setFeedback("");
+      setError("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[Feedback] Submit failed:", message);
+      setError("Could not submit feedback. Please try again.");
+    }
   };
 
   return (
@@ -47,6 +68,16 @@ export default function FeedbackPage() {
               <div className="mb-6 rounded-xl bg-green-100 border border-green-300 text-green-700 p-4">
 
                 ✅ Thank you for your feedback!
+
+              </div>
+
+            )}
+
+            {error && (
+
+              <div className="mb-6 rounded-xl bg-red-100 border border-red-300 text-red-700 p-4">
+
+                {error}
 
               </div>
 

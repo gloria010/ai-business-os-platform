@@ -1,3 +1,4 @@
+//CheckoutPage.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,12 +9,21 @@ import { useApp } from '../contexts/AppContext';
 
 const steps = ['Address', 'Payment', 'Review'];
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 export default function CheckoutPage() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [ordered, setOrdered] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(0);
+  const [manualAddress, setManualAddress] = useState({
+    name: '',
+    line1: '',
+    city: '',
+    state: '',
+    zip: '',
+  });  
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
   const [cardForm, setCardForm] = useState({ number: '', name: '', expiry: '', cvv: '' });
   const [loading, setLoading] = useState(false);
@@ -25,7 +35,36 @@ export default function CheckoutPage() {
 
   const placeOrder = async () => {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
+
+  const address = manualAddress;
+    try {
+      const res = await fetch(`${API_BASE}/api/user/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          items: state.cart.map((item) => ({
+            company: (item.product as any).company,
+            product: item.product.name,
+            quantity: item.quantity,
+            price: item.product.price,
+          })),
+          customerName: address.name || state.user?.name || 'Guest',
+          email: state.user?.email || '',
+          address: address
+            ? { line1: address.line1, city: address.city, state: address.state, zip: address.zip }
+            : null,
+          paymentMethod,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        console.error('Checkout failed:', data.message);
+      }
+    } catch (err) {
+      console.error('Failed to place order:', err);
+    }
+
     dispatch({ type: 'CLEAR_CART' });
     setOrdered(true);
     setLoading(false);
@@ -86,20 +125,43 @@ export default function CheckoutPage() {
               {step === 0 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-2xl border border-slate-100 p-6">
                   <h2 className="font-bold text-slate-800 text-lg mb-5 flex items-center gap-2"><MapPin className="w-5 h-5 text-blue-600" /> Delivery Address</h2>
-                  <div className="space-y-3">
-                    {state.user?.addresses.map((addr, i) => (
-                      <label key={addr.id} className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${selectedAddress === i ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
-                        <input type="radio" checked={selectedAddress === i} onChange={() => setSelectedAddress(i)} className="mt-1" />
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-slate-800 text-sm">{addr.label}</span>
-                            {addr.isDefault && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">Default</span>}
-                          </div>
-                          <p className="text-slate-600 text-sm">{addr.name} · {addr.phone}</p>
-                          <p className="text-slate-500 text-sm">{addr.line1}, {addr.city}, {addr.state} {addr.zip}</p>
-                        </div>
-                      </label>
-                    ))}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Address Line</label>
+                      <input
+                        value={manualAddress.line1}
+                        onChange={e => setManualAddress(f => ({ ...f, line1: e.target.value }))}
+                        placeholder="123 Main Street"
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">City</label>
+                      <input
+                        value={manualAddress.city}
+                        onChange={e => setManualAddress(f => ({ ...f, city: e.target.value }))}
+                        placeholder="New York"
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">State</label>
+                      <input
+                        value={manualAddress.state}
+                        onChange={e => setManualAddress(f => ({ ...f, state: e.target.value }))}
+                        placeholder="NY"
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">ZIP Code</label>
+                      <input
+                        value={manualAddress.zip}
+                        onChange={e => setManualAddress(f => ({ ...f, zip: e.target.value }))}
+                        placeholder="10001"
+                        className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
                   <Button onClick={() => setStep(1)} className="mt-5" icon={<ChevronRight className="w-4 h-4" />} iconPosition="right">Continue to Payment</Button>
                 </motion.div>

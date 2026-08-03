@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight } from 'lucide-react';
@@ -26,6 +26,48 @@ export default function CartPage() {
       showToast('10% discount applied!', 'success', 'Coupon Applied');
     } else {
       showToast('Invalid coupon code', 'error');
+    }
+  };
+
+  const updateQuantity = async (productId: string, quantity: number) => {
+    // Update local state immediately for snappy UI
+    dispatch({ type: 'UPDATE_CART_QUANTITY', payload: { productId, quantity } });
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/user/cart/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ quantity }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.message || 'Failed to update cart', 'error');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[Cart] Update quantity failed:', message);
+      showToast('Could not sync cart with server', 'error');
+    }
+  };
+
+  const removeItem = async (productId: string) => {
+    // Update local state immediately
+    dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/user/cart/${productId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.message || 'Failed to remove item', 'error');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[Cart] Remove item failed:', message);
+      showToast('Could not sync cart with server', 'error');
     }
   };
 
@@ -58,14 +100,14 @@ export default function CartPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <div className="flex items-center gap-1 border border-slate-200 rounded-xl">
-                        <button onClick={() => dispatch({ type: 'UPDATE_CART_QUANTITY', payload: { productId: item.productId, quantity: item.quantity - 1 } })}
+                        <button onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                           className="w-8 h-8 flex items-center justify-center hover:bg-slate-50 rounded-l-xl"><Minus className="w-3 h-3" /></button>
                         <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
-                        <button onClick={() => dispatch({ type: 'UPDATE_CART_QUANTITY', payload: { productId: item.productId, quantity: item.quantity + 1 } })}
+                        <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                           className="w-8 h-8 flex items-center justify-center hover:bg-slate-50 rounded-r-xl"><Plus className="w-3 h-3" /></button>
                       </div>
                       <p className="font-black text-slate-900 w-16 text-right">${(item.product.price * item.quantity).toFixed(0)}</p>
-                      <button onClick={() => dispatch({ type: 'REMOVE_FROM_CART', payload: item.productId })}
+                      <button onClick={() => removeItem(item.productId)}
                         className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>

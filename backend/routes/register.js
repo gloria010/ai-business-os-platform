@@ -1,3 +1,4 @@
+//register.js
 import express from "express";
 import pool from "../db.js";
 
@@ -18,7 +19,7 @@ const categoryCodes = {
   Other: "OTH",
 };
 
-function generateBusinessId(category, company) {
+function generateBusinessId(category, company, suffix = "") {
   const code = categoryCodes[category] || "GEN";
 
   const companyCode = company
@@ -26,7 +27,30 @@ function generateBusinessId(category, company) {
     .substring(0, 4)
     .toUpperCase();
 
-  return `BIZ-${code}-${companyCode}`;
+  return `BIZ-${code}-${companyCode}${suffix}`;
+}
+
+// Ensures the generated businessId doesn't already exist in business_owners.
+// Retries withA a random 3-char suffix on collision (very unlikely, but safe).
+async function generateUniqueBusinessId(conn, category, company) {
+  let attempt = 0;
+  let id = generateBusinessId(category, company);
+
+  while (attempt < 5) {
+    const [rows] = await conn.query(
+      "SELECT id FROM business_owners WHERE business_id = ?",
+      [id]
+    );
+    if (rows.length === 0) {
+      return id;
+    }
+    attempt++;
+    const suffix = "-" + Math.random().toString(36).substring(2, 5).toUpperCase();
+    id = generateBusinessId(category, company, suffix);
+  }
+
+  // Extremely unlikely fallback: timestamp-based suffix guarantees uniqueness
+  return generateBusinessId(category, company, "-" + Date.now().toString(36).toUpperCase());
 }
 
 // Generates an 8-digit numeric company password, e.g. "48213967"
@@ -105,7 +129,7 @@ router.post("/register", async (req, res) => {
         });
       }
 
-      businessId = generateBusinessId(businessCategory, company);
+      businessId = await generateUniqueBusinessId(conn, businessCategory, company);
       companyPassword = generateCompanyPassword();
 
       // status defaults to 'pending' in the schema — department databases are

@@ -1,13 +1,16 @@
+//BusinessDashboard.tsx
 import React from 'react';
 import { useLocation } from "react-router-dom";
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { DollarSign, ShoppingBag, Users, Package, TrendingUp, TrendingDown, ArrowRight, Eye } from 'lucide-react';
+import { DollarSign, ShoppingBag, Users, Package, TrendingUp, TrendingDown, ArrowRight, Eye, MessageCircle, Bell,
+} from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, Tooltip, CartesianGrid, XAxis, YAxis, PieChart, Pie, Cell, Legend } from 'recharts';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import { StatCard } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import { aiInsights, revenueData, ordersData, categoryDistribution, products, mockOrders } from '../../data/mockData';
+import { MessagesSquare } from "lucide-react";
 
 export default function BusinessDashboard() {
   const stats = { revenue: 98000, orders: 980, customers: 5800, products: 215 };
@@ -163,6 +166,182 @@ const company = location.state?.company;
           </div>
         </div>
       </div>
+
+      {/* Messages & Notifications */}
+<div className="grid lg:grid-cols-2 gap-6 mb-8">
+
+  {/* Messages */}
+  <div className="bg-white rounded-2xl border border-slate-100 p-6">
+    <div className="flex items-center justify-between mb-5">
+      <div>
+        <h3 className="font-bold text-slate-800">Messages</h3>
+        <p className="text-slate-500 text-sm">
+          Latest conversations across departments
+        </p>
+      </div>
+
+      <Link
+        to="/business/messages"
+        className="text-blue-600 text-xs font-semibold hover:underline"
+      >
+        View All
+      </Link>
+    </div>
+
+    <div className="space-y-4">
+
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700">
+          HR
+        </div>
+
+        <div className="flex-1">
+          <div className="flex justify-between">
+            <h4 className="font-semibold text-slate-800">
+              HR Department
+            </h4>
+
+            <span className="text-xs text-slate-400">
+              10 min ago
+            </span>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            Three new job applications require your approval.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center font-bold text-green-700">
+          SL
+        </div>
+
+        <div className="flex-1">
+          <div className="flex justify-between">
+            <h4 className="font-semibold text-slate-800">
+              Sales Team
+            </h4>
+
+            <span className="text-xs text-slate-400">
+              35 min ago
+            </span>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            Monthly sales target achieved at 108%.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-700">
+          IV
+        </div>
+
+        <div className="flex-1">
+          <div className="flex justify-between">
+            <h4 className="font-semibold text-slate-800">
+              Inventory
+            </h4>
+
+            <span className="text-xs text-slate-400">
+              1 hr ago
+            </span>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            Wireless Mouse stock has fallen below reorder level.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {/* Notifications */}
+  <div className="bg-white rounded-2xl border border-slate-100 p-6">
+    <div className="flex items-center justify-between mb-5">
+      <div>
+        <h3 className="font-bold text-slate-800">
+          Notifications
+        </h3>
+
+        <p className="text-slate-500 text-sm">
+          Business updates and alerts
+        </p>
+      </div>
+
+      <Link
+        to="/business/notifications"
+        className="text-blue-600 text-xs font-semibold hover:underline"
+      >
+        View All
+      </Link>
+    </div>
+
+    <div className="space-y-4">
+
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 rounded-full bg-green-500 mt-2"></div>
+
+        <div>
+          <p className="font-medium text-slate-800 text-sm">
+            Payment received successfully.
+          </p>
+
+          <span className="text-xs text-slate-500">
+            Today • 9:45 AM
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+
+        <div>
+          <p className="font-medium text-slate-800 text-sm">
+            New customer order #ORD1008 placed.
+          </p>
+
+          <span className="text-xs text-slate-500">
+            Today • 8:10 AM
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 rounded-full bg-orange-500 mt-2"></div>
+
+        <div>
+          <p className="font-medium text-slate-800 text-sm">
+            Product inventory running low.
+          </p>
+
+          <span className="text-xs text-slate-500">
+            Yesterday • 5:40 PM
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-start gap-3">
+        <div className="w-2 h-2 rounded-full bg-red-500 mt-2"></div>
+
+        <div>
+          <p className="font-medium text-slate-800 text-sm">
+            One supplier delivery has been delayed.
+          </p>
+
+          <span className="text-xs text-slate-500">
+            Yesterday • 2:20 PM
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
 
       {/* AI Insights */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6">
