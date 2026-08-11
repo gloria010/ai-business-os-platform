@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Edit, Trash2, Eye } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+import { Search } from 'lucide-react';import DashboardLayout from '../../components/layout/DashboardLayout';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import StarRating from '../../components/ui/StarRating';
 import { useToast } from '../../components/ui/Toast';
 
 const API_BASE = 'http://localhost:5000';
+
+const getImageUrl = (path?: string | null): string => {
+  if (!path) return '/placeholder-product.png';
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+};
 
 interface InventoryProduct {
   id: number;
@@ -31,7 +35,6 @@ interface DisplayProduct extends InventoryProduct {
 }
 
 export default function BusinessProducts() {
-  const { showToast } = useToast();
   const [products, setProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,8 +52,7 @@ export default function BusinessProducts() {
         if (data?.success) {
           const mappedProducts = (Array.isArray(data.products) ? data.products : []).map((item: InventoryProduct) => ({
             ...item,
-            images: item.image_path ? [item.image_path] : ['/placeholder-product.png'],
-            brand: item.sku || item.warehouseName || 'Business Product',
+images:     [getImageUrl(item.image_path)],            brand: item.sku || item.warehouseName || 'Business Product',
             originalPrice: Number(item.price) || 0,
             rating: 4.5,
             inStock: Number(item.stock) > 0,
@@ -98,8 +100,7 @@ export default function BusinessProducts() {
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                {['Product', 'Category', 'Price', 'Stock', 'Rating', 'Status', 'Actions'].map((col) => (
-                  <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
+{['Product', 'Category', 'Price', 'Stock', 'Rating', 'Status'].map((col) => (                  <th key={col} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     {col}
                   </th>
                 ))}
@@ -108,13 +109,13 @@ export default function BusinessProducts() {
             <tbody className="divide-y divide-slate-50">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
                     Loading products...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
                     No products found.
                   </td>
                 </tr>
@@ -164,25 +165,6 @@ export default function BusinessProducts() {
                       <Badge variant={p.inStock ? 'success' : 'error'} size="sm">
                         {p.inStock ? 'Active' : 'Out of Stock'}
                       </Badge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Link
-                          to={`/products/${p.id}`}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Link>
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => showToast('Product deleted', 'error')}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
                     </td>
                   </motion.tr>
                 ))

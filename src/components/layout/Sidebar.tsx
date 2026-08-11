@@ -26,7 +26,6 @@ const consumerLinks: NavLink[] = [
   { href: '/wishlist', icon: Heart, label: 'Wishlist' },
   { href: '/notifications', icon: Bell, label: 'Notifications', badge: true },
   { href: '/dashboard/profile', icon: User, label: 'Profile' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 const businessLinks: NavLink[] = [
@@ -34,8 +33,8 @@ const businessLinks: NavLink[] = [
   { href: '/businesses', icon: Shield, label: 'Businesses' },
   { href: '/business/products', icon: Package, label: 'Products' },
   { href: '/business/orders', icon: ShoppingBag, label: 'Orders' },
-  { href: '/business/inventory', icon: ClipboardList, label: 'Inventory' },
-  { href: '/business/customers', icon: Users, label: 'Customers' },
+  { href: '/business/inventory', icon: ClipboardList, label: 'Employees' },  
+  //{ href: '/business/customers', icon: Users, label: 'Customers' },
   { href: '/business/messages', icon: MessageSquare, label: 'Messages' },
   { href: '/business/notifications', icon: Bell, label: 'Notifications', badge: false },
   { href: '/business/analytics', icon: BarChart2, label: 'Analytics' },

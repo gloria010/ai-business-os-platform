@@ -39,7 +39,7 @@ import BusinessDashboard from './pages/business/BusinessDashboard';
 import BusinessProducts from './pages/business/BusinessProducts';
 import BusinessOrders from './pages/business/BusinessOrders';
 import BusinessAnalytics from './pages/business/BusinessAnalytics';
-import BusinessInsights from './pages/business/BusinessInsights';
+import BusinessEmployee from './pages/business/BusinessEmployee';
 
 import BusinessNotifications from './pages/business/BusinessNotifications';
 import BusinessMessages from './pages/business/BusinessMessages';
@@ -99,8 +99,8 @@ export default function App() {
             <Route path="/business/products" element={<BusinessProducts />} />
             <Route path="/business/orders" element={<BusinessOrders />} />
             <Route path="/business/analytics" element={<BusinessAnalytics />} />
-            <Route path="/business/insights" element={<BusinessInsights />} />
-            <Route path="/business/inventory" element={<BusinessProducts />} />
+            <Route path="/business/insights" element={<BusinessEmployee />} />
+            <Route path="/business/inventory" element={<BusinessEmployee />} />
             <Route path="/business/customers" element={<BusinessDashboard />} />
             <Route path="/business/settings" element={<ProfilePage />} />
 

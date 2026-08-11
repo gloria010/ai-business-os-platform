@@ -1,10 +1,11 @@
+//inventory.js
 import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getCompanyInventoryPool } from "../DbInventory.js";
-import pool from "../db.js"; // shared `business` DB, for messages
+import pool from "../db.js"; // shared `business` DB, for messages AND for reading sales orders
 
 const router = express.Router();
 
@@ -76,6 +77,250 @@ function asyncHandler(fn) {
   };
 }
 
+/* ---------------- SALES -> INVENTORY STOCK SYNC ---------------- */
+// sales.js is not touched. Instead, inventory.js reaches into the same
+// shared `business` DB that sales.js reads from (the `orders` table lives
+// there) and pulls in any order that's now Shipped or Delivered, applying
+// its stock impact on this side, in the company inventory DB.
+//
+// 1. Product stock is reduced by the order quantity — "reduce stock once
+//    completed" (Shipped/Delivered both count as committed here).
+// 2. The matching warehouse's current_stock is reduced by the same amount,
+//    so occupancy drops in step with the products it's assigned to.
+// 3. A stock_movements row (type: 'sold') is logged, so it shows up
+//    alongside every other stock change in Stock Management/Notifications.
+//
+// Products are matched to an order by exact name (orders.product is plain
+// text, not a foreign key) — ambiguous or unmatched names are skipped and
+// logged rather than guessed at. Each order is applied exactly once: a
+// small `synced_sale_orders` tracking table (auto-created on first use, in
+// the company DB) records which order ids have already been processed, so
+// running this on every request is always safe and cheap once caught up.
+
+const STOCK_DEDUCTION_STATUSES = new Set(["Shipped", "Delivered"]);
+
+// Earlier stage than the actual deduction above: as soon as an order is
+// Processing or Shipped, Stock Management should show it as "received" /
+// picked up for fulfillment — this is purely a visibility event (a
+// stock_movements row), it does NOT touch products.stock or warehouse
+// current_stock. The real decrement still only happens via
+// STOCK_DEDUCTION_STATUSES once the order is Shipped/Delivered.
+const STOCK_RESERVATION_STATUSES = new Set(["Processing", "Shipped"]);
+
+// req.businessId (session.workspace, or the raw ?business_id= query param)
+// isn't guaranteed to be the same value stored in orders.business_id —
+// sales.js resolves that through business_owners first (matching on
+// business_id, company name, or a slugified company name), it never trusts
+// the raw value directly. If we skip that same resolution here, the orders
+// query below silently matches zero rows: no error, nothing ever syncs.
+// This mirrors sales.js's resolveBusinessId exactly, without touching that
+// file, so both sides agree on which business_id an order belongs to.
+async function resolveCanonicalBusinessId(rawBusinessId) {
+  if (!rawBusinessId) return null;
+
+  const [rows] = await pool.query(
+    `SELECT business_id FROM business_owners
+     WHERE business_id = ?
+        OR company = ?
+        OR LOWER(REPLACE(company, ' ', '-')) = ?
+     LIMIT 1`,
+    [rawBusinessId, rawBusinessId, String(rawBusinessId).toLowerCase()]
+  );
+
+  if (rows.length === 0) {
+    console.warn(`[Inventory][StockSync] Could not resolve a canonical business_id for "${rawBusinessId}" via business_owners — falling back to the raw value, orders lookup may return nothing`);
+    return rawBusinessId;
+  }
+  return rows[0].business_id;
+}
+
+async function ensureSyncTrackingTable(companyPool) {
+  await companyPool.query(`
+    CREATE TABLE IF NOT EXISTS synced_sale_orders (
+      order_id INT PRIMARY KEY,
+      product_id INT NOT NULL,
+      quantity INT NOT NULL,
+      synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await companyPool.query(`
+    CREATE TABLE IF NOT EXISTS reserved_sale_orders (
+      order_id INT PRIMARY KEY,
+      product_id INT NOT NULL,
+      quantity INT NOT NULL,
+      reserved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+// Logs a "received for fulfillment" stock_movements row the first time an
+// order enters Processing or Shipped. Never touches actual stock/warehouse
+// counts — that only happens in applyOrderStockImpact below, at
+// Shipped/Delivered. Idempotent via reserved_sale_orders, same pattern as
+// the deduction stage.
+async function applyOrderReservation(companyPool, order) {
+  const quantity = Number(order.quantity || 0);
+  if (!order.product || quantity <= 0) {
+    return { orderId: order.id, reserved: false, reason: "No product name or zero quantity on order" };
+  }
+
+  const conn = await companyPool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [productRows] = await conn.query(
+      `SELECT id, name FROM products WHERE name = ? LIMIT 2`,
+      [order.product]
+    );
+
+    if (productRows.length !== 1) {
+      await conn.rollback();
+      console.warn(`[Inventory][StockSync] Reservation skipped for order ${order.id}: ${productRows.length === 0 ? "no" : "ambiguous"} product match for "${order.product}"`);
+      return { orderId: order.id, reserved: false, reason: `${productRows.length === 0 ? "No" : "Ambiguous"} product match for "${order.product}"` };
+    }
+
+    const product = productRows[0];
+
+    await conn.query(
+      `INSERT INTO stock_movements (product_id, type, quantity) VALUES (?, 'reserved', ?)`,
+      [product.id, quantity]
+    );
+
+    await conn.query(
+      `INSERT INTO reserved_sale_orders (order_id, product_id, quantity) VALUES (?, ?, ?)`,
+      [order.id, product.id, quantity]
+    );
+
+    await conn.commit();
+    console.log(`[Inventory][StockSync] Order ${order.id} marked received/reserved: "${product.name}" x${quantity}`);
+    return { orderId: order.id, reserved: true, productId: product.id, quantity };
+  } catch (err) {
+    await conn.rollback();
+    console.error(`[Inventory][StockSync] Failed reserving order ${order.id}: ${err.message}`);
+    return { orderId: order.id, reserved: false, reason: err.message };
+  } finally {
+    conn.release();
+  }
+}
+
+// Applies stock impact for one already-Shipped/Delivered order. Runs in its
+// own transaction so a failure on one order can't corrupt another, and
+// never throws — logs and returns a result object instead, so one bad
+// order (e.g. unmatched product name) doesn't stop the rest of the sync.
+async function applyOrderStockImpact(companyPool, order) {
+  const quantity = Number(order.quantity || 0);
+  if (!order.product || quantity <= 0) {
+    return { orderId: order.id, synced: false, reason: "No product name or zero quantity on order" };
+  }
+
+  const conn = await companyPool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [productRows] = await conn.query(
+      `SELECT id, name, stock, warehouse_id FROM products WHERE name = ? LIMIT 2`,
+      [order.product]
+    );
+
+    if (productRows.length === 0) {
+      await conn.rollback();
+      console.warn(`[Inventory][StockSync] No product named "${order.product}" — skipping order ${order.id}`);
+      return { orderId: order.id, synced: false, reason: `No product named "${order.product}" found` };
+    }
+    if (productRows.length > 1) {
+      await conn.rollback();
+      console.warn(`[Inventory][StockSync] Multiple products named "${order.product}" — skipping order ${order.id} to avoid decrementing the wrong one`);
+      return { orderId: order.id, synced: false, reason: `Multiple products named "${order.product}" found; name is ambiguous` };
+    }
+
+    const product = productRows[0];
+
+    // Product stock: reduced once the order is committed (point 1).
+    await conn.query(
+      `UPDATE products SET stock = GREATEST(stock - ?, 0) WHERE id = ?`,
+      [quantity, product.id]
+    );
+
+    // Stock Management / Notifications feed picks this up automatically.
+    await conn.query(
+      `INSERT INTO stock_movements (product_id, type, quantity) VALUES (?, 'sold', ?)`,
+      [product.id, quantity]
+    );
+
+    // Warehouse occupancy: reduced in step with the product (point 3).
+    if (product.warehouse_id) {
+      await conn.query(
+        `UPDATE warehouses SET current_stock = GREATEST(current_stock - ?, 0) WHERE id = ?`,
+        [quantity, product.warehouse_id]
+      );
+    }
+
+    // Marks this order as done so it's never applied a second time.
+    await conn.query(
+      `INSERT INTO synced_sale_orders (order_id, product_id, quantity) VALUES (?, ?, ?)`,
+      [order.id, product.id, quantity]
+    );
+
+    await conn.commit();
+    console.log(`[Inventory][StockSync] Order ${order.id} synced: decremented "${product.name}" by ${quantity}${product.warehouse_id ? `, warehouse ${product.warehouse_id} updated` : ""}`);
+    return { orderId: order.id, synced: true, productId: product.id, warehouseId: product.warehouse_id || null, quantity };
+  } catch (err) {
+    await conn.rollback();
+    console.error(`[Inventory][StockSync] Failed syncing order ${order.id}: ${err.message}`);
+    return { orderId: order.id, synced: false, reason: err.message };
+  } finally {
+    conn.release();
+  }
+}
+
+// Fetches Shipped/Delivered orders for this business from the shared sales
+// DB, filters out ones already synced, and applies stock impact for the
+// rest. Safe to call on every inventory request — a cheap no-op once
+// orders are caught up (just the two lookup queries below).
+async function syncStockFromSalesOrders(companyPool, businessId) {
+  if (!businessId) return;
+
+  await ensureSyncTrackingTable(companyPool);
+
+  // Pull every order that's in either stage — Processing/Shipped
+  // (reservation) or Shipped/Delivered (deduction) — in one query, then
+  // split them out below. "Shipped" naturally appears in both sets, since
+  // it's the moment it gets reserved AND the moment stock actually comes
+  // off the shelf.
+  const [orders] = await runQuery(
+    pool,
+    `SELECT id, product, quantity, status FROM orders WHERE business_id = ? AND status IN ('Processing', 'Shipped', 'Delivered')`,
+    [businessId],
+    "StockSync: fetch Processing/Shipped/Delivered orders from sales"
+  );
+  if (orders.length === 0) return;
+
+  const orderIds = orders.map((o) => o.id);
+
+  const [reservedRows] = await companyPool.query(
+    `SELECT order_id FROM reserved_sale_orders WHERE order_id IN (?)`,
+    [orderIds]
+  );
+  const alreadyReserved = new Set(reservedRows.map((r) => r.order_id));
+
+  const [syncedRows] = await companyPool.query(
+    `SELECT order_id FROM synced_sale_orders WHERE order_id IN (?)`,
+    [orderIds]
+  );
+  const alreadySynced = new Set(syncedRows.map((r) => r.order_id));
+
+  for (const order of orders) {
+    // Stage 1: "received for fulfillment" — Processing or Shipped.
+    if (STOCK_RESERVATION_STATUSES.has(order.status) && !alreadyReserved.has(order.id)) {
+      await applyOrderReservation(companyPool, order);
+    }
+    // Stage 2: actual stock deduction — Shipped or Delivered.
+    if (STOCK_DEDUCTION_STATUSES.has(order.status) && !alreadySynced.has(order.id)) {
+      await applyOrderStockImpact(companyPool, order);
+    }
+  }
+}
+
 /* ---------------- COMPANY RESOLUTION ---------------- */
 
 // Company comes from the authenticated session (set at login in login.js),
@@ -103,6 +348,17 @@ async function businessDb(req, res, next) {
 
     req.companyPool = await getCompanyInventoryPool(businessId);
     req.businessId = businessId;
+
+    // Pull in any newly Shipped/Delivered sales orders and apply their
+    // stock impact before this request is served. A sync failure is logged
+    // but never blocks the request — inventory data should still load even
+    // if the sales DB is briefly unreachable.
+    try {
+      await syncStockFromSalesOrders(req.companyPool, req.businessId);
+    } catch (err) {
+      console.error(`[Inventory][StockSync] Sync failed for business ${req.businessId}: ${err.message}`);
+    }
+
     next();
   } catch (err) {
     console.error(`[Inventory][AUTH] Failed to resolve business DB: ${err.message}`);
@@ -497,6 +753,7 @@ router.get("/notifications", asyncHandler(async (req, res) => {
       sold: `Product sold: ${row.product_name}`,
       returned: `Return received: ${row.product_name}`,
       damaged: `Damage reported: ${row.product_name}`,
+      reserved: `Order received for fulfillment: ${row.product_name}`,
     };
 
     const colorMap = {
@@ -504,6 +761,7 @@ router.get("/notifications", asyncHandler(async (req, res) => {
       sold: "bg-red-500",
       returned: "bg-blue-500",
       damaged: "bg-orange-500",
+      reserved: "bg-indigo-500",
       update: "bg-purple-500",
     };
 

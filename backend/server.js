@@ -30,6 +30,8 @@ import feedbackRoutes from './routes/user/feedback.js';
 import contactRoutes from './routes/user/contact.js';
 import userOrdersRoutes from "./routes/user/orders.js";
 import checkoutRoutes from "./routes/user/checkout.js";
+import categoriesRouter from "./routes/user/categories.js";
+import userDashboardRouter from "./routes/user/userdashboard.js";
 
 dotenv.config();
 
@@ -44,6 +46,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
     secret: process.env.SESSION_SECRET || "change_this_secret",
@@ -82,7 +85,8 @@ app.use('/api/user', feedbackRoutes);
 app.use('/api/user', contactRoutes);
 app.use("/api/user/orders", userOrdersRoutes);
 app.use("/api/user/checkout", checkoutRoutes);
-
+app.use("/api/user/categories", categoriesRouter);
+app.use("/api/user", userDashboardRouter);
 
 app.get("/", (req, res) => {
     res.send("Backend server is working");
