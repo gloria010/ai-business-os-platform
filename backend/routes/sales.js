@@ -105,15 +105,24 @@ router.get(["/reports/summary", "/:company/reports/summary"], async (req, res) =
 
     const [rows] = await pool.query(
       `SELECT
-         COALESCE(SUM(total), 0) AS totalRevenue,
+         COALESCE(SUM(CASE WHEN status != 'Cancelled' THEN total ELSE 0 END), 0) AS totalRevenue,
          COUNT(*) AS totalOrders,
          SUM(CASE WHEN status IN ('Delivered', 'Shipped') THEN 1 ELSE 0 END) AS completedOrders,
-         SUM(quantity) AS productsSold
+         SUM(CASE WHEN status != 'Cancelled' THEN quantity ELSE 0 END) AS productsSold
        FROM orders WHERE business_id = ?`,
       [businessId]
     );
 
+    const [topProductRows] = await pool.query(
+      `SELECT product, SUM(quantity) AS units
+       FROM orders WHERE business_id = ? AND status != 'Cancelled'
+       GROUP BY product ORDER BY units DESC LIMIT 1`,
+      [businessId]
+    );
+
     const summary = rows[0];
+    const topProduct = topProductRows[0];
+
     res.json({
       success: true,
       summary: {
@@ -122,8 +131,8 @@ router.get(["/reports/summary", "/:company/reports/summary"], async (req, res) =
         totalOrders: Number(summary.totalOrders || 0),
         completedOrders: Number(summary.completedOrders || 0),
         productsSold: Number(summary.productsSold || 0),
-        topProduct: "-",
-        topProductUnits: 0,
+        topProduct: topProduct ? topProduct.product : "-",
+        topProductUnits: topProduct ? Number(topProduct.units || 0) : 0,
       },
     });
   } catch (err) {
@@ -141,7 +150,8 @@ router.get(["/reports/monthly-sales", "/:company/reports/monthly-sales"], async 
 
     const [rows] = await pool.query(
       `SELECT DATE_FORMAT(order_date, '%Y-%m') AS month, SUM(total) AS sales
-       FROM orders WHERE business_id = ? GROUP BY DATE_FORMAT(order_date, '%Y-%m') ORDER BY month ASC`,
+       FROM orders WHERE business_id = ? AND status != 'Cancelled'
+       GROUP BY DATE_FORMAT(order_date, '%Y-%m') ORDER BY month ASC`,
       [businessId]
     );
 
@@ -161,7 +171,8 @@ router.get(["/reports/product-sales", "/:company/reports/product-sales"], async 
 
     const [rows] = await pool.query(
       `SELECT product, SUM(quantity) AS sold
-       FROM orders WHERE business_id = ? GROUP BY product ORDER BY sold DESC LIMIT 5`,
+       FROM orders WHERE business_id = ? AND status != 'Cancelled'
+       GROUP BY product ORDER BY sold DESC LIMIT 5`,
       [businessId]
     );
 
@@ -169,6 +180,72 @@ router.get(["/reports/product-sales", "/:company/reports/product-sales"], async 
   } catch (err) {
     console.error("GET /api/sales/reports/product-sales error:", err);
     res.status(500).json({ success: false, message: err.message || "Failed to load product sales" });
+  }
+});
+
+router.post(["/ai-assistant", "/:company/ai-assistant"], async (req, res) => {
+  try {
+    const businessId = await resolveBusinessId(req);
+    if (!businessId) {
+      return res.status(401).json({ success: false, message: "Business session not found" });
+    }
+
+    const { message } = req.body || {};
+    const text = (message || "").toLowerCase();
+
+    let reply = "I can help with sales, orders, and demand questions. Try asking about low sales, best sellers, or a summary.";
+
+    if (text.includes("low sales") || text.includes("push")) {
+      const [rows] = await pool.query(
+        `SELECT product, SUM(quantity) AS sold
+         FROM orders WHERE business_id = ?
+         GROUP BY product ORDER BY sold ASC LIMIT 3`,
+        [businessId]
+      );
+      if (rows.length === 0) {
+        reply = "I don't have enough order data yet to identify low performers.";
+      } else {
+        reply = `Lowest performing products: ${rows.map(r => `${r.product} (${r.sold} sold)`).join(", ")}. Consider a promotion or bundling to boost these.`;
+      }
+    } else if (text.includes("predict") || text.includes("demand")) {
+      const [rows] = await pool.query(
+        `SELECT DATE_FORMAT(order_date, '%Y-%m') AS month, SUM(total) AS sales
+         FROM orders WHERE business_id = ?
+         GROUP BY DATE_FORMAT(order_date, '%Y-%m') ORDER BY month DESC LIMIT 3`,
+        [businessId]
+      );
+      if (rows.length < 2) {
+        reply = "I need at least two months of order history to predict demand trends.";
+      } else {
+        const latest = Number(rows[0].sales);
+        const prev = Number(rows[1].sales);
+        const growth = prev > 0 ? (((latest - prev) / prev) * 100).toFixed(1) : "0";
+        reply = `Based on recent trends, sales changed by ${growth}% month-over-month. Projected next month revenue: ₹${Math.round(latest * (1 + growth / 100)).toLocaleString("en-IN")}.`;
+      }
+    } else if (text.includes("best selling") || text.includes("best-selling")) {
+      const [rows] = await pool.query(
+        `SELECT product, SUM(quantity) AS sold
+         FROM orders WHERE business_id = ?
+         GROUP BY product ORDER BY sold DESC LIMIT 3`,
+        [businessId]
+      );
+      reply = rows.length === 0
+        ? "No product sales data available yet."
+        : `Best sellers: ${rows.map(r => `${r.product} (${r.sold} units)`).join(", ")}.`;
+    } else if (text.includes("summary")) {
+      const [rows] = await pool.query(
+        `SELECT COALESCE(SUM(total), 0) AS revenue, COUNT(*) AS orders
+         FROM orders WHERE business_id = ?`,
+        [businessId]
+      );
+      const r = rows[0];
+      reply = `You've made ₹${Number(r.revenue).toLocaleString("en-IN")} across ${r.orders} orders so far.`;
+    }
+
+    res.json({ success: true, reply });
+  } catch (err) {
+    console.error("POST /api/sales/ai-assistant error:", err);
+    res.status(500).json({ success: false, message: err.message || "AI assistant failed" });
   }
 });
 

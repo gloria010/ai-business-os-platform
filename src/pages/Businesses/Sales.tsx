@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import MessageForm from "../../components/Businesses/MessageForm";
 import {
-  LayoutDashboard, DollarSign, ShoppingCart, BarChart3, Bell, MessageSquare, Brain,
+  LayoutDashboard, DollarSign, ShoppingCart, BarChart3, Bell, MessageSquare, Brain, Send,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar,
@@ -66,6 +66,121 @@ function formatDate(value: string | null) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+type AIChatMessage = {
+  id: number;
+  from: "ai" | "user";
+  text: string;
+};
+
+type AIQuickAction = {
+  id: string;
+  label: string;
+  prompt: string;
+};
+
+const aiQuickActions: AIQuickAction[] = [
+  { id: "boost-sales", label: "Boost Low Sales", prompt: "Which products have low sales and need a push?" },
+  { id: "predict-demand", label: "Predict Demand", prompt: "Predict demand for the next 30 days" },
+  { id: "best-selling", label: "Best Selling Products", prompt: "What are my best selling products?" },
+  { id: "sales-summary", label: "Sales Summary", prompt: "Give me a summary of this month's sales" },
+];
+
+function AISalesAssistant({ company }: { company: string }) {
+  const [messages, setMessages] = useState<AIChatMessage[]>([
+    {
+      id: 1,
+      from: "ai",
+      text: "👋 Hello! I'm your Sales AI Assistant. Ask me anything about your sales, orders, or customers.",
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [activeAction, setActiveAction] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const sendMessage = async (text: string, actionId?: string) => {
+    if (!text.trim()) return;
+
+    const userMsg: AIChatMessage = { id: Date.now(), from: "user", text };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setActiveAction(actionId ?? null);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/sales/${company}/ai-assistant`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      const replyText = data.success ? data.reply : "Sorry, I couldn't process that right now.";
+      setMessages((prev) => [...prev, { id: Date.now() + 1, from: "ai", text: replyText }]);
+    } catch (err) {
+      console.error("AI assistant error:", err);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, from: "ai", text: "Something went wrong reaching the assistant." },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div className="flex items-center gap-4 p-6 border-b">
+        <div className="bg-blue-600 p-3 rounded-2xl">
+          <Brain className="text-white" size={26} />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold">AI Sales Assistant</h2>
+          <p className="text-slate-500 text-sm">Smart sales recommendations powered by AI.</p>
+        </div>
+      </div>
+
+      <div className="bg-slate-50 p-6 space-y-3 max-h-80 overflow-y-auto">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`rounded-xl px-4 py-3 text-sm max-w-2xl ${
+              msg.from === "ai"
+                ? "bg-white text-slate-700 shadow-sm"
+                : "bg-blue-600 text-white ml-auto"
+            }`}
+          >
+            {msg.text}
+          </div>
+        ))}
+        {loading && (
+          <div className="bg-white text-slate-400 rounded-xl px-4 py-3 text-sm max-w-2xl shadow-sm">
+            Thinking...
+          </div>
+        )}
+      </div>
+
+         
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 border-t bg-slate-50">
+        {aiQuickActions.map((action) => (
+          <button
+            key={action.id}
+            onClick={() => sendMessage(action.prompt, action.id)}
+            className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-5 text-center transition ${
+              activeAction === action.id
+                ? "border-blue-600 bg-blue-50"
+                : "border-slate-200 bg-white hover:border-blue-300"
+            }`}
+          >
+            <Brain className="text-blue-600" size={20} />
+            <span className="font-semibold text-sm">{action.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function Sales() {
@@ -218,7 +333,7 @@ const companyNames: Record<string, string> = {
     if (activeMenu === "notifications" || activeMenu === "dashboard") {
       loadNotifications();
     }
-    if (activeMenu === "orders" || activeMenu === "dashboard" || activeMenu === "sales") {
+    if (activeMenu === "orders" || activeMenu === "dashboard" || activeMenu === "sales" || activeMenu === "communication") {
       loadOrders();
     }
     if (activeMenu === "reports" || activeMenu === "sales") {
@@ -227,63 +342,18 @@ const companyNames: Record<string, string> = {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMenu, company]);
 
-const communicationMessages = [
-  {
-    id: 1,
-    sender: "Sales Manager",
-    color: "blue",
-    border: "border-blue-600",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
-    time: "Today • 9:15 AM",
-    message:
-      "Laptop sales increased by 18% this week. We recommend adding more inventory before the weekend.",
-  },
-  {
-    id: 2,
-    sender: "Business Owner",
-    color: "green",
-    border: "border-green-600",
-    bg: "bg-green-50",
-    text: "text-green-700",
-    time: "Today • 10:00 AM",
-    message:
-      "Approved. Increase the stock by 100 units and inform the warehouse team.",
-  },
-  {
-    id: 3,
-    sender: "Sales Executive",
-    color: "yellow",
-    border: "border-yellow-500",
-    bg: "bg-yellow-50",
-    text: "text-yellow-700",
-    time: "Yesterday",
-    message:
-      "Several customers requested an additional 10% discount on smartphones during the festival sale.",
-  },
-  {
-    id: 4,
-    sender: "Marketing Team",
-    color: "purple",
-    border: "border-purple-600",
-    bg: "bg-purple-50",
-    text: "text-purple-700",
-    time: "Yesterday",
-    message:
-      "A new social media campaign will begin tomorrow to boost weekend sales.",
-  },
-  {
-    id: 5,
-    sender: "Warehouse Team",
-    color: "red",
-    border: "border-red-500",
-    bg: "bg-red-50",
-    text: "text-red-700",
-    time: "2 Days Ago",
-    message:
-      "Inventory for wireless keyboards is running low. Please arrange replenishment within two days.",
-  },
-];
+const orderCommunicationMessages = orders.slice(0, 10).map((order) => ({
+  id: `order-${order.id}`,
+  sender: "Order System",
+  color: "green",
+  border: "border-green-600",
+  bg: "bg-green-50",
+  text: "text-green-700",
+  time: formatDate(order.order_date),
+  message: `🛒 New order received: ${order.order_code} — ${order.customer_name} ordered ${order.quantity} x ${order.product} (${formatCurrency(order.total)}).`,
+}));
+
+
 
   return (
      <div className="min-h-screen bg-slate-100 flex">
@@ -1041,9 +1111,13 @@ Sales Notifications
 Business Communication
 </h2>
 
+{orderCommunicationMessages.length === 0 && (
+  <p className="text-slate-400 text-center py-8">No order activity yet.</p>
+)}
+
 <div className="space-y-5">
 
-{communicationMessages.map((msg)=>(
+{orderCommunicationMessages.map((msg)=>(
 
 <div
 key={msg.id}
@@ -1081,6 +1155,8 @@ className={`${msg.bg} border-l-4 ${msg.border} rounded-xl p-5`}
 {activeMenu === "analytics" && (
 
 <div className="space-y-8">
+
+  <AISalesAssistant company={company || ""} />
 
   {/* AI Summary Cards */}
 

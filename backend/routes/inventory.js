@@ -273,6 +273,66 @@ async function applyOrderStockImpact(companyPool, order) {
   }
 }
 
+// Reverses whatever stock impact a now-Cancelled order previously had. If
+// it had already been deducted (Shipped/Delivered before cancellation),
+// stock and warehouse counts are added back and a 'cancelled' stock_movements
+// row is logged. If it had only been reserved (Processing/Shipped, never
+// actually deducted), there's nothing to add back — the reservation record
+// is simply cleared so Stock Management stops showing it as received.
+// Deleting the synced_sale_orders / reserved_sale_orders rows here also
+// makes this naturally idempotent: once reversed, the order is no longer
+// "already synced/reserved", so it can never be reversed a second time.
+async function reverseOrderStockImpact(companyPool, order, { wasSynced, wasReserved }) {
+  const conn = await companyPool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    if (wasSynced) {
+      const [[synced]] = await conn.query(
+        `SELECT product_id, quantity FROM synced_sale_orders WHERE order_id = ?`,
+        [order.id]
+      );
+      if (synced) {
+        const [[product]] = await conn.query(
+          `SELECT id, name, warehouse_id FROM products WHERE id = ?`,
+          [synced.product_id]
+        );
+        if (product) {
+          await conn.query(
+            `UPDATE products SET stock = stock + ? WHERE id = ?`,
+            [synced.quantity, product.id]
+          );
+          await conn.query(
+            `INSERT INTO stock_movements (product_id, type, quantity) VALUES (?, 'cancelled', ?)`,
+            [product.id, synced.quantity]
+          );
+          if (product.warehouse_id) {
+            await conn.query(
+              `UPDATE warehouses SET current_stock = current_stock + ? WHERE id = ?`,
+              [synced.quantity, product.warehouse_id]
+            );
+          }
+        }
+        await conn.query(`DELETE FROM synced_sale_orders WHERE order_id = ?`, [order.id]);
+      }
+    }
+
+    if (wasReserved) {
+      await conn.query(`DELETE FROM reserved_sale_orders WHERE order_id = ?`, [order.id]);
+    }
+
+    await conn.commit();
+    console.log(`[Inventory][StockSync] Order ${order.id} cancelled — stock impact reversed (wasSynced=${wasSynced}, wasReserved=${wasReserved})`);
+    return { orderId: order.id, reversed: true };
+  } catch (err) {
+    await conn.rollback();
+    console.error(`[Inventory][StockSync] Failed reversing cancelled order ${order.id}: ${err.message}`);
+    return { orderId: order.id, reversed: false, reason: err.message };
+  } finally {
+    conn.release();
+  }
+}
+
 // Fetches Shipped/Delivered orders for this business from the shared sales
 // DB, filters out ones already synced, and applies stock impact for the
 // rest. Safe to call on every inventory request — a cheap no-op once
@@ -287,11 +347,11 @@ async function syncStockFromSalesOrders(companyPool, businessId) {
   // split them out below. "Shipped" naturally appears in both sets, since
   // it's the moment it gets reserved AND the moment stock actually comes
   // off the shelf.
-  const [orders] = await runQuery(
+    const [orders] = await runQuery(
     pool,
-    `SELECT id, product, quantity, status FROM orders WHERE business_id = ? AND status IN ('Processing', 'Shipped', 'Delivered')`,
+    `SELECT id, product, quantity, status FROM orders WHERE business_id = ? AND status IN ('Processing', 'Shipped', 'Delivered', 'Cancelled')`,
     [businessId],
-    "StockSync: fetch Processing/Shipped/Delivered orders from sales"
+    "StockSync: fetch Processing/Shipped/Delivered/Cancelled orders from sales"
   );
   if (orders.length === 0) return;
 
@@ -309,7 +369,18 @@ async function syncStockFromSalesOrders(companyPool, businessId) {
   );
   const alreadySynced = new Set(syncedRows.map((r) => r.order_id));
 
-  for (const order of orders) {
+    for (const order of orders) {
+    if (order.status === "Cancelled") {
+      // Only worth reversing if this order actually had a stock effect
+      // applied before it was cancelled — otherwise there's nothing to undo.
+      if (alreadySynced.has(order.id) || alreadyReserved.has(order.id)) {
+        await reverseOrderStockImpact(companyPool, order, {
+          wasSynced: alreadySynced.has(order.id),
+          wasReserved: alreadyReserved.has(order.id),
+        });
+      }
+      continue;
+    }
     // Stage 1: "received for fulfillment" — Processing or Shipped.
     if (STOCK_RESERVATION_STATUSES.has(order.status) && !alreadyReserved.has(order.id)) {
       await applyOrderReservation(companyPool, order);
@@ -331,7 +402,7 @@ async function businessDb(req, res, next) {
     // Prefer the session workspace (secure, can't be spoofed by editing the URL).
     // Fall back to ?business_id= if there's no session yet — this keeps the app
     // working while the session-cookie issue is being debugged separately.
-    let businessId = req.session?.workspace;
+    let businessId = req.session?.user?.company;
 
     if (!businessId && req.query.business_id) {
       console.warn(
@@ -727,9 +798,55 @@ router.get("/stock-summary", asyncHandler(async (req, res) => {
     "GET /stock-summary (movements)"
   );
 
+  // Turn the movements rows (added/sold/returned/damaged/reserved/cancelled)
+  // into a lookup so the dashboard cards can read each type directly.
+  const movementTotals = movements.reduce((acc, row) => {
+    acc[row.type] = Number(row.total || 0);
+    return acc;
+  }, {});
+
+  const stockAdded = movementTotals.added || 0;
+  const stockSold = movementTotals.sold || 0;
+  const stockReturned = movementTotals.returned || 0;
+  const stockDamaged = movementTotals.damaged || 0;
+  const reservedStock = movementTotals.reserved || 0;
+
+  // Pending purchase orders stand in for "incoming" stock until POs carry
+  // an explicit quantity column.
+  const [[incoming]] = await runQuery(
+    p,
+    `SELECT COUNT(*) AS pendingPOs FROM purchase_orders WHERE status = 'Pending'`,
+    undefined,
+    "GET /stock-summary (incoming)"
+  );
+
+  const availableStock = Number(totals.available || 0);
+  const outgoingStock = reservedStock;
+  const incomingStock = Number(incoming.pendingPOs || 0);
+
+  const totalForPct = availableStock + outgoingStock + stockDamaged;
+  const availablePct = totalForPct > 0 ? Math.round((availableStock / totalForPct) * 100) : 0;
+  const reservedPct = totalForPct > 0 ? Math.round((outgoingStock / totalForPct) * 100) : 0;
+  const damagedPct = totalForPct > 0 ? Math.round((stockDamaged / totalForPct) * 100) : 0;
+  const inventoryAccuracy = totalForPct > 0 ? Math.max(0, 100 - damagedPct) : 100;
+
   res.json({
     success: true,
-    totals: { ...totals, totalCategories: categoryCount.total },
+    totals: {
+      ...totals,
+      totalCategories: categoryCount.total,
+      availableStock,
+      incomingStock,
+      outgoingStock,
+      availablePct,
+      reservedPct,
+      damagedPct,
+      inventoryAccuracy,
+      stockAdded,
+      stockSold,
+      stockReturned,
+      stockDamaged,
+    },
     movements,
   });
 }));
@@ -748,12 +865,13 @@ router.get("/notifications", asyncHandler(async (req, res) => {
 
   const notifications = rows.map((row) => {
     const type = row.type || "update";
-    const titleMap = {
+        const titleMap = {
       added: `Stock added: ${row.product_name}`,
       sold: `Product sold: ${row.product_name}`,
       returned: `Return received: ${row.product_name}`,
       damaged: `Damage reported: ${row.product_name}`,
       reserved: `Order received for fulfillment: ${row.product_name}`,
+      cancelled: `Order cancelled, stock restored: ${row.product_name}`,
     };
 
     const colorMap = {
@@ -762,6 +880,7 @@ router.get("/notifications", asyncHandler(async (req, res) => {
       returned: "bg-blue-500",
       damaged: "bg-orange-500",
       reserved: "bg-indigo-500",
+      cancelled: "bg-slate-500",
       update: "bg-purple-500",
     };
 
@@ -972,8 +1091,7 @@ router.delete("/warehouses/:id", asyncHandler(async (req, res) => {
 /* ---------------- MESSAGES (shared `business` DB) ---------------- */
 
 router.get("/messages", asyncHandler(async (req, res) => {
-  const businessId = req.businessId || req.session?.workspace;
-  const [[owner]] = await runQuery(
+const businessId = req.businessId || req.session?.user?.company;  const [[owner]] = await runQuery(
     pool,
     `SELECT id FROM business_owners WHERE business_id = ?`,
     [businessId],
@@ -1102,10 +1220,9 @@ router.post("/ai-assistant", asyncHandler(async (req, res) => {
 router.get("/purchase-orders", asyncHandler(async (req, res) => {
   const [rows] = await runQuery(
     req.companyPool,
-    `SELECT po.*, s.name AS supplier_name, p.name AS product_name
+    `SELECT po.*, s.name AS supplier_name, po.product AS product_name
      FROM purchase_orders po
      LEFT JOIN suppliers s ON s.id = po.supplier_id
-     LEFT JOIN products p ON p.id = po.product_id
      ORDER BY po.created_at DESC`,
     undefined,
     "GET /purchase-orders"
@@ -1114,7 +1231,7 @@ router.get("/purchase-orders", asyncHandler(async (req, res) => {
 }));
 
 router.post("/purchase-orders", asyncHandler(async (req, res) => {
-  const { poNumber, supplierId, productId, amount, expectedDate, status } = req.body;
+  const { poNumber, supplierId, product, amount, expectedDate, status } = req.body;
   if (!poNumber || !supplierId) {
     return res.status(400).json({ success: false, message: "PO number and supplier are required" });
   }
@@ -1122,9 +1239,9 @@ router.post("/purchase-orders", asyncHandler(async (req, res) => {
   try {
     const [result] = await runQuery(
       req.companyPool,
-      `INSERT INTO purchase_orders (po_number, supplier_id, product_id, amount, expected_date, status)
+      `INSERT INTO purchase_orders (po_number, supplier_id, product, amount, expected_date, status)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [poNumber, supplierId, productId || null, amount || 0, expectedDate || null, status || "Pending"],
+      [poNumber, supplierId, product || null, amount || 0, expectedDate || null, status || "Pending"],
       "POST /purchase-orders"
     );
     res.json({ success: true, id: result.insertId });
@@ -1137,18 +1254,39 @@ router.post("/purchase-orders", asyncHandler(async (req, res) => {
 }));
 
 router.put("/purchase-orders/:id", asyncHandler(async (req, res) => {
-  const { supplierId, productId, amount, expectedDate, status } = req.body;
+  const { supplierId, product, amount, expectedDate, status } = req.body;
+
   await runQuery(
     req.companyPool,
     `UPDATE purchase_orders SET
       supplier_id = COALESCE(?, supplier_id),
-      product_id = COALESCE(?, product_id),
+      product = COALESCE(?, product),
       amount = COALESCE(?, amount),
       expected_date = COALESCE(?, expected_date),
       status = COALESCE(?, status)
      WHERE id = ?`,
-    [supplierId, productId, amount, expectedDate, status, req.params.id],
+    [supplierId, product, amount, expectedDate, status, req.params.id],
     `PUT /purchase-orders/${req.params.id}`
+  );
+  res.json({ success: true });
+}));
+
+router.delete("/purchase-orders/:id", asyncHandler(async (req, res) => {
+  const [[po]] = await runQuery(
+    req.companyPool,
+    `SELECT id FROM purchase_orders WHERE id = ?`,
+    [req.params.id],
+    `DELETE /purchase-orders/${req.params.id} (fetch existing)`
+  );
+  if (!po) {
+    return res.status(404).json({ success: false, message: "Purchase order not found" });
+  }
+
+  await runQuery(
+    req.companyPool,
+    `DELETE FROM purchase_orders WHERE id = ?`,
+    [req.params.id],
+    `DELETE /purchase-orders/${req.params.id}`
   );
   res.json({ success: true });
 }));

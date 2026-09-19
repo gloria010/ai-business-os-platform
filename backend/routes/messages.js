@@ -85,19 +85,24 @@ router.get("/", async (req, res) => {
     if (!businessId || !businessId.trim()) {
       return res.status(400).json({ success: false, message: "Query param 'businessId' is required." });
     }
-    if (!to || !to.trim()) {
-      return res.status(400).json({ success: false, message: "Query param 'to' is required." });
+
+    const params = [businessId.trim()];
+    let query = `
+      SELECT id, business_id, from_name, from_department, to_recipient, subject, message, created_at
+      FROM messages
+      WHERE business_id = ?
+    `;
+
+    if (to && to.trim()) {
+      query += ` AND LOWER(to_recipient) = LOWER(?) `;
+      params.push(to.trim());
     }
 
-    const [rows] = await pool.query(
-      `SELECT id, from_name, from_department, to_recipient, subject, message, created_at
-       FROM messages
-       WHERE business_id = ? AND to_recipient = ?
-       ORDER BY created_at DESC`,
-      [businessId.trim(), to.trim()]
-    );
+    query += ` ORDER BY created_at DESC`;
 
-    return res.json({ success: true, messages: rows });
+    const [rows] = await pool.query(query, params);
+
+    return res.json({ success: true, messages: rows, scope: to && to.trim() ? "filtered" : "business" });
   } catch (err) {
     console.error("GET /api/messages error:", err);
     return res.status(500).json({ success: false, message: "Server error while fetching messages." });

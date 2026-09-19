@@ -20,6 +20,9 @@ import salesRouter from "./routes/sales.js";
 import ceoRouter from "./routes/ceo.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import advertisementRouter from "./routes/advertisement.js";
+import ceoaiRouter from "./routes/ceoai.js";
+
 
 
 // users
@@ -32,7 +35,8 @@ import userOrdersRoutes from "./routes/user/orders.js";
 import checkoutRoutes from "./routes/user/checkout.js";
 import categoriesRouter from "./routes/user/categories.js";
 import userDashboardRouter from "./routes/user/userdashboard.js";
-
+import forgotPasswordRoutes from "./routes/user/forgotPassword.js";
+import searchRouter from "./routes/user/search.js"; 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,7 +49,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "25mb" }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
@@ -75,7 +79,8 @@ app.use("/api/hr", hrRouter);
 app.use("/api/employee", employeeRouter);
 app.use("/api/sales", salesRouter);
 app.use("/api/ceo", ceoRouter);
-
+app.use("/api", advertisementRouter);
+app.use("/api/ceoai", ceoaiRouter);
 
 //users
 app.use("/api/user", userProductsRouter);
@@ -86,7 +91,9 @@ app.use('/api/user', contactRoutes);
 app.use("/api/user/orders", userOrdersRoutes);
 app.use("/api/user/checkout", checkoutRoutes);
 app.use("/api/user/categories", categoriesRouter);
+app.use("/api/user", forgotPasswordRoutes);
 app.use("/api/user", userDashboardRouter);
+app.use("/api/user", searchRouter);  
 
 app.get("/", (req, res) => {
     res.send("Backend server is working");

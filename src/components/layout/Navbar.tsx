@@ -58,7 +58,7 @@ export default function Navbar() {
                 <Zap className="w-4 h-4 text-white" />
               </div>
               <span className={`font-bold text-lg hidden sm:block transition-colors ${transparent ? 'text-white' : 'text-slate-800'}`}>
-                AI<span className="text-blue-500">Biz</span>OS
+                AI<span className="text-blue-500">Biz</span>
               </span>
             </Link>
 

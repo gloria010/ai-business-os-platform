@@ -110,13 +110,29 @@ CREATE TABLE IF NOT EXISTS orders (
   FOREIGN KEY (business_id) REFERENCES business_owners(business_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+
+
+CREATE TABLE IF NOT EXISTS advertisements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  company VARCHAR(255) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  image LONGTEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS messages (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  business_id VARCHAR(50) DEFAULT NULL,
   from_name VARCHAR(255) NOT NULL,
+  from_department VARCHAR(100) DEFAULT NULL,
   to_recipient VARCHAR(100) NOT NULL,
   subject VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_business_id (business_id),
   INDEX idx_to_recipient (to_recipient)
 ) ENGINE=InnoDB;
 `;
@@ -143,6 +159,26 @@ export async function initSchema() {
         `UPDATE business_owners SET status = 'pending' WHERE status IS NULL`
       );
       console.log("Added status column to business_owners");
+    } catch (_) {
+      // Column already exists — safe to ignore
+    }
+
+    try {
+      await conn.query(
+        `ALTER TABLE messages
+         ADD COLUMN business_id VARCHAR(50) NULL AFTER id`
+      );
+      console.log("Added business_id column to messages");
+    } catch (_) {
+      // Column already exists — safe to ignore
+    }
+
+    try {
+      await conn.query(
+        `ALTER TABLE messages
+         ADD COLUMN from_department VARCHAR(100) NULL AFTER from_name`
+      );
+      console.log("Added from_department column to messages");
     } catch (_) {
       // Column already exists — safe to ignore
     }

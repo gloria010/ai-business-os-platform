@@ -77,6 +77,8 @@ interface Payslip {
   created_at: string;
 }
 
+const STANDARD_LEAVE_DAYS = 15;
+
 export default function Employee() {
   const location = useLocation();
   const { company: businessId } = useParams();
@@ -103,7 +105,7 @@ export default function Employee() {
         break;
       case "Check Leave Balance":
         response = profile
-          ? `You have ${profile.leave_balance} leave days remaining.`
+          ? `You have ${Math.max(0, STANDARD_LEAVE_DAYS - approvedLeaveDays)} leave days remaining.`
           : "Leave balance isn't available yet.";
         break;
       case "Improve Productivity":
@@ -577,7 +579,7 @@ export default function Employee() {
     },
     {
       title: "Leave Balance",
-      value: profile ? String(profile.leave_balance) : "—",
+      value: profile ? String(Math.max(0, STANDARD_LEAVE_DAYS - approvedLeaveDays)) : "—",
       icon: Plane,
       color: "from-purple-500 to-pink-500",
     },
@@ -995,26 +997,6 @@ export default function Employee() {
           {/* ================= ATTENDANCE ================= */}
           {activeMenu === "Attendance" && (
             <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} className="mt-8 space-y-6">
-              {/* Summary Cards */}
-              <div className="grid md:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl">
-                  <p className="text-white/80">Attendance</p>
-                  <h2 className="text-4xl font-bold mt-2">{attendancePct}%</h2>
-                </div>
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-3xl p-6 text-white shadow-xl">
-                  <p className="text-white/80">Present</p>
-                  <h2 className="text-4xl font-bold mt-2">{presentDays}</h2>
-                </div>
-                <div className="bg-gradient-to-r from-yellow-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl">
-                  <p className="text-white/80">Late</p>
-                  <h2 className="text-4xl font-bold mt-2">{lateDays}</h2>
-                </div>
-                <div className="bg-gradient-to-r from-red-500 to-pink-600 rounded-3xl p-6 text-white shadow-xl">
-                  <p className="text-white/80">Absent</p>
-                  <h2 className="text-4xl font-bold mt-2">{absentDays}</h2>
-                </div>
-              </div>
-
               {/* Check In / Check Out */}
               <div className="bg-white rounded-3xl shadow-xl p-6 flex items-center justify-between flex-wrap gap-4">
                 <div>
@@ -1190,18 +1172,16 @@ export default function Employee() {
           {activeMenu === "Leave" && (
             <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} className="mt-8 space-y-6">
               {/* Leave Summary */}
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl">
                   <p className="text-white/80">Remaining</p>
-                  <h2 className="text-4xl font-bold mt-2">{profile ? profile.leave_balance : "—"}</h2>
+                  <h2 className="text-4xl font-bold mt-2">
+                    {profile ? Math.max(0, STANDARD_LEAVE_DAYS - approvedLeaveDays) : "—"}
+                  </h2>
                 </div>
                 <div className="bg-gradient-to-r from-yellow-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl">
                   <p className="text-white/80">Used (Approved)</p>
                   <h2 className="text-4xl font-bold mt-2">{approvedLeaveDays}</h2>
-                </div>
-                <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-3xl p-6 text-white shadow-xl">
-                  <p className="text-white/80">Pending</p>
-                  <h2 className="text-4xl font-bold mt-2">{pendingLeaveCount}</h2>
                 </div>
               </div>
 
@@ -1560,16 +1540,7 @@ export default function Employee() {
                     ))}
                   </div>
 
-                  <div className="mt-6 flex gap-3">
-                    <input
-                      type="text"
-                      placeholder="Ask AI anything..."
-                      className="flex-1 border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    />
-                    <button className="px-6 py-3 rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition">
-                      Send
-                    </button>
-                  </div>
+
                 </div>
 
                 {/* Quick AI Actions */}

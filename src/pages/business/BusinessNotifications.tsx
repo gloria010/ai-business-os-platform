@@ -6,6 +6,8 @@ const API_BASE = "http://localhost:5000";
 
 interface NotificationItem {
   id: number;
+  businessId?: string;
+  recipient?: string;
   icon: React.ReactNode;
   title: string;
   message: string;
@@ -17,51 +19,30 @@ export default function BusinessNotifications() {
 
   useEffect(() => {
     const loadNotifications = async () => {
-      let businessId = localStorage.getItem("businessId") || "BIZ-FUR-HOME";
-
       try {
-        const sessionRes = await fetch(`${API_BASE}/api/login/session`, {
+        const res = await fetch(`${API_BASE}/api/ceo/notifications`, {
           credentials: "include",
         });
-        const sessionData = await sessionRes.json();
-        if (sessionData?.success && sessionData?.user?.company) {
-          businessId = sessionData.user.company;
-        }
-      } catch {
-        // Keep the stored fallback.
-      }
-
-      localStorage.setItem("businessId", businessId);
-
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/messages?businessId=${encodeURIComponent(businessId)}&to=HR`,
-          {
-            credentials: "include",
-          }
-        );
         const data = await res.json();
 
-        if (data?.success) {
-          const messages = Array.isArray(data.messages) ? data.messages : [];
+        const messages = Array.isArray(data?.notifications) ? data.notifications : [];
 
-          setNotifications(
-            messages.map((msg: any, index: number) => ({
-              id: msg.id ?? index + 1,
-              icon:
-                index % 2 === 0 ? (
-                  <ShoppingBag className="w-5 h-5 text-blue-600" />
-                ) : (
-                  <Bell className="w-5 h-5 text-orange-600" />
-                ),
-              title: msg.subject || msg.title || "Message",
-              message: msg.message || msg.content || "No content",
-              time: msg.created_at ? new Date(msg.created_at).toLocaleString() : "Just now",
-            }))
-          );
-        } else {
-          setNotifications([]);
-        }
+        setNotifications(
+          messages.map((msg: any, index: number) => ({
+            id: msg.id ?? index + 1,
+            businessId: msg.business_id,
+            recipient: msg.to_recipient || "Company",
+            icon:
+              index % 2 === 0 ? (
+                <ShoppingBag className="w-5 h-5 text-blue-600" />
+              ) : (
+                <Bell className="w-5 h-5 text-orange-600" />
+              ),
+            title: msg.subject || "Message",
+            message: `${msg.message || msg.content || "No content"}${msg.from_name ? ` — from ${msg.from_name}` : ""}`,
+            time: msg.created_at ? new Date(msg.created_at).toLocaleString() : "Just now",
+          }))
+        );
       } catch {
         setNotifications([]);
       }
@@ -87,7 +68,14 @@ export default function BusinessNotifications() {
               </div>
 
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-800">{item.title}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-slate-800">{item.title}</h3>
+                  {item.recipient && (
+                    <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                      {item.recipient}
+                    </span>
+                  )}
+                </div>
 
                 <p className="text-sm text-slate-600 mt-1">{item.message}</p>
 

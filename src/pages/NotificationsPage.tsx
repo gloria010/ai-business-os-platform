@@ -22,48 +22,11 @@ const colorMap: Record<Notification['type'], string> = {
 };
 
 export default function NotificationsPage() {
-  const { state, dispatch } = useApp();
-  const unread = state.notifications.filter(n => !n.read).length;
-
-  const timeAgo = (iso: string) => {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  };
-
   return (
     <DashboardLayout role="consumer" title="Notifications">
-      <div className="flex items-center justify-between mb-6">
-        <p className="text-slate-500 text-sm">{unread} unread</p>
-        {unread > 0 && (
-          <button onClick={() => dispatch({ type: 'MARK_ALL_NOTIFICATIONS_READ' })}
-            className="flex items-center gap-1.5 text-blue-600 text-sm font-semibold hover:underline">
-            <Check className="w-4 h-4" /> Mark all as read
-          </button>
-        )}
-      </div>
-
-      <div className="space-y-3">
-        {state.notifications.map((notif, i) => (
-          <motion.div key={notif.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            onClick={() => dispatch({ type: 'MARK_NOTIFICATION_READ', payload: notif.id })}
-            className={`bg-white rounded-2xl border p-5 flex gap-4 cursor-pointer transition-all hover:shadow-md ${notif.read ? 'border-slate-100' : 'border-blue-200 bg-blue-50/30'}`}>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${colorMap[notif.type]}`}>
-              {iconMap[notif.type]}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className={`font-semibold text-sm ${notif.read ? 'text-slate-700' : 'text-slate-900'}`}>{notif.title}</h3>
-                <span className="text-xs text-slate-400 flex-shrink-0">{timeAgo(notif.createdAt)}</span>
-              </div>
-              <p className="text-slate-500 text-sm mt-0.5">{notif.message}</p>
-            </div>
-            {!notif.read && <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0" />}
-          </motion.div>
-        ))}
+      <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
+        <Bell className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+        <p className="text-slate-500 text-sm">Notifications are turned off.</p>
       </div>
     </DashboardLayout>
   );

@@ -1,13 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, X, TrendingUp, Clock, Filter } from 'lucide-react';
+import { Search, X, TrendingUp, Clock } from 'lucide-react';
 import PublicLayout from '../components/layout/PublicLayout';
-import StarRating from '../components/ui/StarRating';
 import { useApp } from '../contexts/AppContext';
-import { products, businesses } from '../data/mockData';
 
 const trending = ['iPhone 15', 'Nike Air Max', 'MacBook Pro', 'Yoga Mat', 'Protein Powder', 'Smart TV', 'Vitamin C Serum'];
+
+// Adjust this if your API isn't proxied to the same origin as the frontend.
+const API_BASE = '/api/user';
+
+interface ProductResult {
+  id: string;
+  name: string;
+  sku: string;
+  price: number;
+  stock: number;
+  status: string;
+  image: string | null;
+  category: string;
+  company: string;
+  businessId: string;
+}
+
+interface BusinessResult {
+  id: string;
+  name: string;
+  category: string;
+  pincode: string | null;
+}
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
@@ -15,14 +36,42 @@ export default function SearchPage() {
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [activeTab, setActiveTab] = useState<'products' | 'businesses'>('products');
 
+  const [productResults, setProductResults] = useState<ProductResult[]>([]);
+  const [businessResults, setBusinessResults] = useState<BusinessResult[]>([]);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const q = searchParams.get('q') || '';
     setQuery(q);
     if (q) dispatch({ type: 'ADD_RECENT_SEARCH', payload: q });
   }, [searchParams]);
 
-  const productResults = products.filter(p => query && (p.name.toLowerCase().includes(query.toLowerCase()) || p.category.toLowerCase().includes(query.toLowerCase()) || p.description.toLowerCase().includes(query.toLowerCase())));
-  const businessResults = businesses.filter(b => query && (b.name.toLowerCase().includes(query.toLowerCase()) || b.category.toLowerCase().includes(query.toLowerCase())));
+  // Real-time search — hits the backend every time `query` changes.
+  useEffect(() => {
+    if (!query) {
+      setProductResults([]);
+      setBusinessResults([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoading(true);
+
+    fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          setProductResults(data.products);
+          setBusinessResults(data.businesses);
+        }
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error('Search failed:', err);
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [query]);
 
   return (
     <PublicLayout>
@@ -78,7 +127,15 @@ export default function SearchPage() {
             /* Results */
             <div>
               <div className="flex items-center gap-4 mb-6">
-                <p className="text-slate-500 text-sm"><strong className="text-slate-800">{productResults.length + businessResults.length}</strong> results for "{query}"</p>
+                <p className="text-slate-500 text-sm">
+                  {loading ? (
+                    <span className="text-slate-400">Searching…</span>
+                  ) : (
+                    <>
+                      <strong className="text-slate-800">{productResults.length + businessResults.length}</strong> results for "{query}"
+                    </>
+                  )}
+                </p>
                 <div className="flex gap-2 ml-auto">
                   {(['products', 'businesses'] as const).map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)}
@@ -100,14 +157,12 @@ export default function SearchPage() {
                     {productResults.map((p, i) => (
                       <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                         <Link to={`/products/${p.id}`} className="group block bg-white rounded-2xl overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-300">
-                          <div className="h-44 overflow-hidden bg-slate-50">
-                            <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            {p.discount > 0 && <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">-{p.discount}%</span>}
+                          <div className="h-44 overflow-hidden bg-slate-50 relative">
+                            <img src={p.image || '/placeholder-product.png'} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           </div>
                           <div className="p-4">
                             <p className="text-xs text-blue-600 font-medium mb-1">{p.category}</p>
                             <h3 className="font-bold text-slate-800 text-sm line-clamp-2 mb-2">{p.name}</h3>
-                            <StarRating rating={p.rating} size="sm" />
                             <p className="font-black text-slate-900 mt-2">${p.price}</p>
                           </div>
                         </Link>
@@ -128,11 +183,12 @@ export default function SearchPage() {
                     {businessResults.map((b, i) => (
                       <motion.div key={b.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
                         <Link to={`/businesses/${b.id}`} className="group flex gap-3 bg-white rounded-2xl p-4 border border-slate-100 hover:shadow-md transition-shadow">
-                          <img src={b.logo} alt={b.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                          <div className="w-14 h-14 rounded-xl bg-blue-50 text-blue-600 font-bold flex items-center justify-center flex-shrink-0">
+                            {b.name?.[0]?.toUpperCase()}
+                          </div>
                           <div className="min-w-0">
                             <h3 className="font-bold text-slate-800 truncate group-hover:text-blue-600">{b.name}</h3>
                             <p className="text-slate-500 text-xs">{b.category}</p>
-                            <StarRating rating={b.rating} showValue reviewCount={b.reviewCount} size="sm" />
                           </div>
                         </Link>
                       </motion.div>

@@ -38,6 +38,12 @@ export default function Dashboard() {
   path: "inventory",
   description: "Inventory Management",
 },
+{
+      name: "Advertisement",
+      icon: "📢",
+      path: "advertisement",
+      description: "Advertisement Management",
+    },
 
   ];
 

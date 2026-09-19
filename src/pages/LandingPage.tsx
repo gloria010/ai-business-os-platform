@@ -1,21 +1,71 @@
-import React, { useState } from 'react';
+// LandingPage.tsx
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, ArrowRight, Star, ChevronRight, Zap, Shield, TrendingUp, Users, Package, ShoppingBag, Building2, Award, Play } from 'lucide-react';
+import { Search, ArrowRight, Star, ChevronRight, Zap, Shield, TrendingUp, Users, Package, Award, Play } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import { categories, businesses, products, testimonials, platformStats, revenueData } from '../data/mockData';
+import { categories, businesses, testimonials, platformStats, revenueData } from '../data/mockData';
 import { useApp } from '../contexts/AppContext';
 import PublicLayout from '../components/layout/PublicLayout';
-import StarRating from '../components/ui/StarRating';
-import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import StarRating from '../components/ui/StarRating';
+const UPLOADS_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const fadeUp = { initial: { opacity: 0, y: 30 }, animate: { opacity: 1, y: 0 } };
-
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const { dispatch } = useApp();
   const navigate = useNavigate();
+
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCategoryCounts() {
+      try {
+        const res = await fetch('/api/user/categories/counts');
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const countMap = await res.json(); // { [business_category]: count }
+        if (!cancelled) setCategoryCounts(countMap);
+      } catch (err) {
+        console.error('Failed to load category counts:', err);
+      }
+    }
+
+    loadCategoryCounts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const [liveProducts, setLiveProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/user/products');
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = await res.json();
+        if (!cancelled && json.success) {
+          // newest first, capped to 8 for the "trending" strip
+          const sorted = [...json.products].sort(
+            (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setLiveProducts(sorted.slice(0, 8));
+        }
+      } catch (err) {
+        console.error('Failed to load products:', err);
+      }
+    }
+
+    loadProducts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +75,7 @@ export default function LandingPage() {
     }
   };
 
-  const featuredBusinesses = businesses.filter(b => b.featured).slice(0, 4);
-  const trendingProducts = products.filter(p => p.trending).slice(0, 8);
-  const popularCategories = categories.slice(0, 6);
+    const featuredBusinesses = businesses.filter(b => b.featured).slice(0, 4);
 
   return (
     <PublicLayout>
@@ -126,8 +174,7 @@ export default function LandingPage() {
                             <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <Tooltip formatter={(v: number) => [`$${(v/1000).toFixed(0)}k`, '']} contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
-                        <Area type="monotone" dataKey="value" stroke="#3B82F6" fill="url(#heroGrad)" strokeWidth={2} dot={false} />
+                        <Tooltip formatter={(v: any) => [`$${(Number(v ?? 0)/1000).toFixed(0)}k`, '']} contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />                        <Area type="monotone" dataKey="value" stroke="#3B82F6" fill="url(#heroGrad)" strokeWidth={2} dot={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -200,9 +247,9 @@ export default function LandingPage() {
                   <div className={`absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent`} />
                   <div className="absolute bottom-0 left-0 right-0 p-3">
                     <p className="text-white font-bold text-sm">{cat.name}</p>
-                    <p className="text-white/70 text-xs">{cat.businessCount} businesses</p>
+                    <p className="text-white/70 text-xs">{categoryCounts[cat.name] || 0} businesses</p>
                   </div>
-                  <div className="absolute top-3 right-3 text-xl">{cat.icon}</div>
+                   <div className="absolute top-3 right-3 text-xl">{cat.icon}</div>
                 </Link>
               </motion.div>
             ))}
@@ -265,24 +312,22 @@ export default function LandingPage() {
               View All <ChevronRight className="w-4 h-4" />
             </Link>
           </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            {trendingProducts.map((product, i) => (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {liveProducts.map((product, i) => (
               <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
                 <Link to={`/products/${product.id}`} className="group block bg-white rounded-2xl overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-300">
-                  <div className="relative h-44 overflow-hidden bg-slate-50">
-                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    {product.discount > 0 && (
-                      <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">-{product.discount}%</span>
+                  <div className="relative h-44 overflow-hidden bg-slate-50 flex items-center justify-center">
+                    {product.image ? (
+                      <img src={`${UPLOADS_BASE}${product.image}`} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <Package className="w-10 h-10 text-slate-300" />
                     )}
                   </div>
                   <div className="p-4">
                     <p className="text-xs text-blue-600 font-medium mb-1">{product.category}</p>
                     <h3 className="font-bold text-slate-800 text-sm line-clamp-2 mb-1">{product.name}</h3>
-                    <StarRating rating={product.rating} size="sm" />
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-slate-900 font-black text-base">${product.price}</span>
-                      {product.originalPrice > product.price && <span className="text-slate-400 text-xs line-through">${product.originalPrice}</span>}
-                    </div>
+                    <p className="text-slate-400 text-xs mb-2">{product.company}</p>
+                    <span className="text-slate-900 font-black text-base">${product.price}</span>
                   </div>
                 </Link>
               </motion.div>

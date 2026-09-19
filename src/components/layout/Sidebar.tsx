@@ -36,7 +36,7 @@ const businessLinks: NavLink[] = [
   { href: '/business/inventory', icon: ClipboardList, label: 'Employees' },  
   //{ href: '/business/customers', icon: Users, label: 'Customers' },
   { href: '/business/messages', icon: MessageSquare, label: 'Messages' },
-  { href: '/business/notifications', icon: Bell, label: 'Notifications', badge: false },
+  //{ href: '/business/notifications', icon: Bell, label: 'Notifications', badge: false },
   { href: '/business/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/business/insights', icon: Lightbulb, label: 'AI Insights' },
 ];
@@ -47,9 +47,9 @@ const adminLinks: NavLink[] = [
   { href: "/products", icon: Package, label: "Products" },
   { href: "/categories", icon: Tag, label: "Categories" },
   { href: '/admin/consumers', icon: Users, label: 'Consumers' },
-  { href: '/admin/orders', icon: Truck, label: 'Orders' },
+//  { href: '/admin/orders', icon: Truck, label: 'Orders' },
   { href: '/admin/analytics', icon: TrendingUp, label: 'Analytics' },
-  { href: '/admin/reports', icon: FileText, label: 'Reports' },
+ // { href: '/admin/reports', icon: FileText, label: 'Reports' },
   { href: '/admin/approvals', icon: Star, label: 'Approvals' },
 ];
 

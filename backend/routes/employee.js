@@ -198,7 +198,7 @@ router.get("/:businessId/attendance", async (req, res) => {
 
     const companyPool = await getCompanyEmployeePool(businessId);
 
-    let query = `SELECT id, employee_id, date, check_in, check_out, status FROM attendance`;
+    let query = `SELECT id, employee_id, DATE_FORMAT(date, '%Y-%m-%d') AS date, check_in, check_out, status FROM attendance`;
     const params = [];
 
     if (employeeId) {

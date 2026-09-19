@@ -6,13 +6,8 @@ import pool from "../db.js";
 const router = express.Router();
 
 async function getBusinessId(req) {
-  const fromSession = req.session?.workspace || req.session?.businessId;
-  if (fromSession) return fromSession;
-
-  if (req.query.business_id) return req.query.business_id;
-  if (req.query.businessId) return req.query.businessId;
-
-  return null;
+  const sessionUser = req.session?.user;
+  return sessionUser?.company || req.session?.workspace || req.session?.businessId || null;
 }
 
 function normalizeOrderRow(row) {
@@ -290,6 +285,33 @@ router.get("/orders/:id", async (req, res) => {  try {
   } catch (err) {
     console.error("CEO order detail error:", err);
     return res.status(500).json({ success: false, message: "Failed to load order" });
+  }
+});
+
+// ---- GET /api/ceo/notifications ----
+// All messages addressed to any department within the CEO's own business.
+// Same `messages` table messages.js reads from, but scoped via getBusinessId(req)
+// to match the rest of ceo.js — no cross-business access.
+router.get("/notifications", async (req, res) => {
+  try {
+    const businessId = await getBusinessId(req);
+
+    if (!businessId) {
+      return res.status(401).json({ success: false, message: "Business not identified" });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT id, business_id, from_name, from_department, to_recipient, subject, message, created_at
+       FROM messages
+       WHERE business_id = ?
+       ORDER BY created_at DESC`,
+      [businessId]
+    );
+
+    return res.json({ success: true, notifications: rows });
+  } catch (err) {
+    console.error("CEO notifications error:", err);
+    return res.status(500).json({ success: false, message: "Failed to load notifications" });
   }
 });
 

@@ -360,10 +360,11 @@ export default function Inventory() {
           supplier: po.supplier_name,
           product: po.product_name,
           amount: `₹${Number(po.amount).toLocaleString("en-IN")}`,
-          date: po.expected_date,
+          date: po.expected_date ? new Date(po.expected_date).toLocaleDateString("en-IN") : "-",
           status: po.status,
         }))
       );
+
     }
     return data;
   }, [qs]);
@@ -707,16 +708,17 @@ export default function Inventory() {
     }
   };
 
-  const handleCreatePO = async () => {
+     const handleCreatePO = async () => {
     setIsSaving(true);
     try {
+      const supplierId = suppliers.find((s) => s.name === newPO.supplier)?.id;
       const res = await fetch(`${API_BASE}/purchase-orders${qs}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           poNumber: newPO.id,
-          supplier: newPO.supplier,
+          supplierId,
           product: newPO.product,
           amount: Number(String(newPO.amount).replace(/[^0-9.]/g, "")) || 0,
           expectedDate: newPO.date,
@@ -746,12 +748,13 @@ export default function Inventory() {
     if (!editedOrder) return;
     setIsSaving(true);
     try {
+      const supplierId = suppliers.find((s) => s.name === editedOrder.supplier)?.id;
       const res = await fetch(`${API_BASE}/purchase-orders/${editedOrder.id}${qs}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          supplier: editedOrder.supplier,
+          supplierId,
           product: editedOrder.product,
           amount: Number(String(editedOrder.amount).replace(/[^0-9.]/g, "")) || 0,
           expectedDate: editedOrder.date,
@@ -975,8 +978,73 @@ export default function Inventory() {
     }
   };
 
-  const handleSendChatMessage = async (messageOverride?: string) => {
-    const messageText = (messageOverride ?? chatInput).trim();
+  // Builds a CSV file in-browser and triggers a download — no backend call needed.
+  const downloadCSV = (filename: string, rows: (string | number)[][]) => {
+    const csvContent = rows
+      .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+    const handleExportReport = () => {
+    downloadCSV(`inventory-report-${Date.now()}.csv`, [
+      ["Metric", "Value"],
+      ["Total Products", inventory.totalProducts],
+      ["Total Categories", inventory.totalCategories],
+      ["Low Stock", inventory.lowStock],
+      ["Inventory Value", inventory.inventoryValue],      ["Inventory Accuracy", `${inventory.inventoryAccuracy}%`],
+    ]);
+  };
+
+  const handleDownloadReport = (reportName: string) => {
+    switch (reportName) {
+           case "Inventory Value Report":
+        downloadCSV(`inventory-value-report-${Date.now()}.csv`, [
+          ["Product", "SKU", "Category", "Stock", "Price"],
+          ...products.map((p) => [p.name, p.sku, p.category, p.stock, p.price]),        ]);
+        break;
+      case "Stock Movement Report":
+        downloadCSV(`stock-movement-report-${Date.now()}.csv`, [
+          ["Type", "Quantity"],
+          ["Added", inventory.stockAdded],
+          ["Sold", inventory.stockSold],
+          ["Returned", inventory.stockReturned],
+          ["Damaged", inventory.stockDamaged],
+        ]);
+        break;
+      case "Low Stock Report":
+        downloadCSV(`low-stock-report-${Date.now()}.csv`, [
+          ["Product", "SKU", "Stock", "Status"],
+          ...products.filter((p) => p.status === "Low Stock").map((p) => [p.name, p.sku, p.stock, p.status]),
+        ]);
+        break;
+        case "Purchase Order Report":
+        downloadCSV(`purchase-order-report-${Date.now()}.csv`, [
+          ["PO Number", "Supplier", "Product", "Amount", "Expected Date", "Status"],
+          ...purchaseOrders.map((po) => [po.id, po.supplier, po.product, po.amount, po.date, po.status]),        ]);
+        break;
+      case "Warehouse Report":
+        downloadCSV(`warehouse-report-${Date.now()}.csv`, [
+          ["Warehouse", "Manager", "Location", "Capacity", "Occupancy", "Status"],
+          ...warehouses.map((w) => [w.name, w.manager, w.location, w.capacity, w.occupancy, w.status]),
+        ]);
+        break;
+      default:
+        downloadCSV(`${reportName.replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.csv`, [
+          ["Report"],
+          [reportName],
+        ]);
+    }
+  };
+
+  const handleSendChatMessage = async (messageOverride?: string) => {    const messageText = (messageOverride ?? chatInput).trim();
     if (!messageText || aiLoading) return;
 
     const userMessage: ChatMessage = { role: "user", text: messageText };
@@ -990,7 +1058,7 @@ export default function Inventory() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          message: messageText,
+          question: messageText,
           history: chatMessages.map((m) => ({ role: m.role, text: m.text })),
         }),
       });
@@ -1956,7 +2024,7 @@ export default function Inventory() {
                   </div>
 
                   <button
-                    onClick={() => alert("Report exported successfully")}
+                    onClick={handleExportReport}
                     className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
                   >
                     Export Report
@@ -2013,8 +2081,8 @@ export default function Inventory() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex justify-center">
-                            <button
-                              onClick={() => alert(`${report} downloaded`)}
+                                                        <button
+                              onClick={() => handleDownloadReport(report)}
                               className="px-4 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200"
                             >
                               Download
@@ -2080,26 +2148,7 @@ export default function Inventory() {
                   )}
                 </div>
 
-                <div className="mt-6 flex gap-3">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSendChatMessage();
-                    }}
-                    placeholder="Ask AI anything..."
-                    className="flex-1 border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
 
-                  <button
-                    onClick={() => handleSendChatMessage()}
-                    disabled={aiLoading || !chatInput.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-6 rounded-lg"
-                  >
-                    {aiLoading ? "..." : "Send"}
-                  </button>
-                </div>
               </div>
 
               <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -2897,24 +2946,36 @@ export default function Inventory() {
                   />
                 </div>
 
-                <div>
+                                <div>
                   <label className="font-medium">Supplier</label>
-                  <input
-                    type="text"
+                  <select
                     value={newPO.supplier}
                     onChange={(e) => setNewPO({ ...newPO, supplier: e.target.value })}
                     className="w-full border rounded-xl px-4 py-3 mt-2"
-                  />
+                  >
+                    <option value="">Select supplier</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="font-medium">Product</label>
-                  <input
-                    type="text"
+                  <select
                     value={newPO.product}
                     onChange={(e) => setNewPO({ ...newPO, product: e.target.value })}
                     className="w-full border rounded-xl px-4 py-3 mt-2"
-                  />
+                  >
+                    <option value="">Select product</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.name}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

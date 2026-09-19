@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, CheckCircle, XCircle, MapPin, Clock } from 'lucide-react';
+import { Search, CheckCircle, XCircle, MapPin, Clock, Trash2 } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Badge from '../../components/ui/Badge';
 import { useToast } from '../../components/ui/Toast';
@@ -74,6 +74,7 @@ export default function AdminApprovals() {
   };
 
   const handleReject = async (id: number, company: string) => {
+    console.log('[handleReject] called for id =', id, company);
     try {
       const res = await fetch(
         `http://localhost:5000/api/admin/business-owners/${id}/reject`,
@@ -85,6 +86,28 @@ export default function AdminApprovals() {
         return;
       }
       showToast(`${company} rejected`, 'error');
+      loadAll();
+    } catch {
+      showToast('Unable to reach the server', 'error', 'Connection Error');
+    }
+  };
+
+  const handleDelete = async (id: number, company: string) => {
+    console.log('[handleDelete] called for id =', id, company);
+    if (!window.confirm(`Permanently remove "${company}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/admin/business-owners/${id}`,
+        { method: 'DELETE', credentials: 'include' }
+      );
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast(data.message || 'Removal failed', 'error', 'Error');
+        return;
+      }
+      showToast(`${company} removed`, 'success');
       loadAll();
     } catch {
       showToast('Unable to reach the server', 'error', 'Connection Error');
@@ -184,7 +207,8 @@ export default function AdminApprovals() {
                   </div>
                   {activeTab === 'pending' && <Badge variant="warning">Pending Review</Badge>}
                   {activeTab === 'approved' && <Badge variant="success">Approved</Badge>}
-{activeTab === 'rejected' && <Badge variant="error">Rejected</Badge>}                </div>
+                  {activeTab === 'rejected' && <Badge variant="error">Rejected</Badge>}
+                </div>
                 <p className="text-xs text-slate-500 mb-1">Owner: {biz.owner_name}</p>
                 <p className="text-xs text-slate-500 mb-1">{biz.email} · {biz.phone}</p>
                 {biz.pincode && (
@@ -221,6 +245,13 @@ export default function AdminApprovals() {
                     <XCircle className="w-4 h-4" /> Rejected
                   </div>
                 )}
+
+                <button
+                  onClick={() => handleDelete(biz.id, biz.company)}
+                  className="w-full flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs py-2.5 rounded-xl transition-colors mt-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Remove
+                </button>
               </div>
             </motion.div>
           ))}

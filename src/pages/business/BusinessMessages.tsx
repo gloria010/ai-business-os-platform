@@ -47,7 +47,7 @@ export default function BusinessMessages() {
 
       localStorage.setItem("businessId", resolvedBusinessId);
 
-      fetch(`${API_BASE}/api/messages?businessId=${encodeURIComponent(resolvedBusinessId)}&to=Sales`, {
+      fetch(`${API_BASE}/api/messages?businessId=${encodeURIComponent(resolvedBusinessId)}`, {
         credentials: "include",
       })
         .then((res) => res.json())

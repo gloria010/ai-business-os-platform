@@ -33,6 +33,8 @@ import Employees from './pages/Businesses/Employees';
 import Sales from "./pages/Businesses/Sales";
 import Analytics from './pages/Businesses/Analytics';
 import Inventory from "./pages/Businesses/Inventory";
+import Advertisement from "./pages/Businesses/Advertisement";
+
 
 // Business Dashboard
 import BusinessDashboard from './pages/business/BusinessDashboard';
@@ -87,6 +89,7 @@ export default function App() {
             <Route path="/businesses/:company/sales" element={<Sales />} />
             <Route path="/businesses/:company/analytics" element={<Analytics />} />
             <Route path="/businesses/:company/inventory" element={<Inventory />} />
+            <Route path="/businesses/:company/advertisement" element={<Advertisement />} />
 
             {/* Consumer Dashboard */}
             <Route path="/dashboard" element={<ConsumerDashboard />} />
@@ -99,7 +102,7 @@ export default function App() {
             <Route path="/business/products" element={<BusinessProducts />} />
             <Route path="/business/orders" element={<BusinessOrders />} />
             <Route path="/business/analytics" element={<BusinessAnalytics />} />
-            <Route path="/business/insights" element={<BusinessEmployee />} />
+            <Route path="/business/insights" element={<Analytics />} />
             <Route path="/business/inventory" element={<BusinessEmployee />} />
             <Route path="/business/customers" element={<BusinessDashboard />} />
             <Route path="/business/settings" element={<ProfilePage />} />
