@@ -24,7 +24,7 @@ const consumerLinks: NavLink[] = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
   { href: '/dashboard/orders', icon: ShoppingBag, label: 'My Orders' },
   { href: '/wishlist', icon: Heart, label: 'Wishlist' },
-  { href: '/notifications', icon: Bell, label: 'Notifications', badge: true },
+  // { href: '/notifications', icon: Bell, label: 'Notifications', badge: true },
   { href: '/dashboard/profile', icon: User, label: 'Profile' },
 ];
 

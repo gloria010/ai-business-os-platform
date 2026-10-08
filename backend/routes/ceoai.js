@@ -135,6 +135,46 @@ router.get("/analytics/forecast", async (req, res) => {
     const MIN_RELIABLE_SAMPLE = 5;
     const lowSample = otherTotals.length < MIN_RELIABLE_SAMPLE;
 
+    // ---- Step 4: rank among all approved, registered businesses ----
+    // LEFT JOIN so registered businesses with no orders still count (they rank last).
+    // Uses the same date window as ownTotal so the comparison is like-for-like.
+    const [rankRows] = await pool.query(
+      `SELECT bo.business_id, bo.business_category,
+              COALESCE(SUM(o.total), 0) AS total_sales
+       FROM business_owners bo
+       LEFT JOIN orders o
+              ON o.business_id = bo.business_id AND o.order_date >= ?
+       WHERE bo.status = 'approved'
+       GROUP BY bo.business_id, bo.business_category`,
+      [startLabel]
+    );
+
+    const myId = String(businessId);
+    const registered = rankRows.map((r) => ({
+      id: String(r.business_id),
+      category: r.business_category,
+      total: Number(r.total_sales || 0),
+    }));
+
+    // Ties share a rank: rank = 1 + number of businesses with strictly higher sales.
+    const rankIn = (list) => 1 + list.filter((b) => b.id !== myId && b.total > ownTotal).length;
+
+    const isRegistered = registered.some((b) => b.id === myId);
+    const sameCategory = category ? registered.filter((b) => b.category === category) : [];
+
+    const ranking = {
+      platform: {
+        rank: isRegistered ? rankIn(registered) : null,
+        outOf: registered.length,
+      },
+      category: {
+        name: category,
+        rank: isRegistered && category ? rankIn(sameCategory) : null,
+        outOf: sameCategory.length,
+      },
+      isTied: registered.some((b) => b.id !== myId && b.total === ownTotal),
+    };
+
     return res.json({
       success: true,
       forecast: {
@@ -148,6 +188,7 @@ router.get("/analytics/forecast", async (req, res) => {
         averageMonthlySales,
         monthsAnalyzed: monthsBack,
       },
+      ranking,
       benchmark: {
         scope: benchmarkScope,
         category: category || null,

@@ -9,6 +9,7 @@ const trending = ['iPhone 15', 'Nike Air Max', 'MacBook Pro', 'Yoga Mat', 'Prote
 
 // Adjust this if your API isn't proxied to the same origin as the frontend.
 const API_BASE = '/api/user';
+const UPLOADS_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface ProductResult {
   id: string;
@@ -158,7 +159,7 @@ export default function SearchPage() {
                       <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
                         <Link to={`/products/${p.id}`} className="group block bg-white rounded-2xl overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-300">
                           <div className="h-44 overflow-hidden bg-slate-50 relative">
-                            <img src={p.image || '/placeholder-product.png'} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <img src={p.image ? `${UPLOADS_BASE}${p.image}` : '/placeholder-product.png'} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           </div>
                           <div className="p-4">
                             <p className="text-xs text-blue-600 font-medium mb-1">{p.category}</p>

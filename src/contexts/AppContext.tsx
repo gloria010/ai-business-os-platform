@@ -171,10 +171,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const pData = await pRes.json();
               if (!pData.success || !pData.product) return null;
 
+              const UPLOADS_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
               const p = pData.product;
               const product: Product = {
                 ...p,
-                images: p.image ? [p.image] : [],
+                images: p.image ? [`${UPLOADS_BASE}${p.image}`] : [],
                 businessName: p.company,
               };
 

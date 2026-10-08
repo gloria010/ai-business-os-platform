@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight } from 'lucide-react';
 import PublicLayout from '../components/layout/PublicLayout';
+
+const UPLOADS_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 import Button from '../components/ui/Button';
 import { useApp } from '../contexts/AppContext';
 import { useToast } from '../components/ui/Toast';

@@ -33,10 +33,17 @@ interface BenchmarkData {
   lowSample: boolean;
 }
 
+interface RankingData {
+  platform: { rank: number | null; outOf: number };
+  category: { name: string | null; rank: number | null; outOf: number };
+  isTied: boolean;
+}
+
 export default function Analytics() {
   const [forecast, setForecast] = useState<ForecastData | null>(null);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [benchmark, setBenchmark] = useState<BenchmarkData | null>(null);
+  const [ranking, setRanking] = useState<RankingData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,11 +59,13 @@ export default function Analytics() {
           setForecast(data.forecast);
           setSummary(data.summary);
           setBenchmark(data.benchmark);
+          setRanking(data.ranking ?? null);
         }
       } catch {
         setForecast(null);
         setSummary(null);
         setBenchmark(null);
+        setRanking(null);
       } finally {
         setLoading(false);
       }
@@ -151,7 +160,44 @@ export default function Analytics() {
           </div>
         )}
 
-        {benchmark && (
+        {ranking && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">Your Ranking</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="rounded-xl bg-emerald-50 p-4">
+                <p className="text-xs text-slate-500">Among all registered businesses</p>
+                <p className="text-3xl font-bold text-slate-800 mt-1">
+                  {ranking.platform.rank ? `#${ranking.platform.rank}` : "—"}
+                  <span className="text-sm font-medium text-slate-500">
+                    {" "}of {ranking.platform.outOf}
+                  </span>
+                </p>
+              </div>
+
+              {ranking.category.name && (
+                <div className="rounded-xl bg-blue-50 p-4">
+                  <p className="text-xs text-slate-500">In {ranking.category.name}</p>
+                  <p className="text-3xl font-bold text-slate-800 mt-1">
+                    {ranking.category.rank ? `#${ranking.category.rank}` : "—"}
+                    <span className="text-sm font-medium text-slate-500">
+                      {" "}of {ranking.category.outOf}
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {ranking.isTied && (
+              <p className="text-xs text-slate-400 mt-3">Tied with another business on sales.</p>
+            )}
+            <p className="text-xs text-slate-400 mt-1">
+              Based on sales over the last {summary?.monthsAnalyzed ?? 6} months.
+            </p>
+          </div>
+        )}
+
+        {/* {benchmark && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <h2 className="text-2xl font-bold text-slate-800 mb-4">Industry Comparison</h2>
 
@@ -193,7 +239,7 @@ export default function Analytics() {
               </p>
             )}
           </div>
-        )}
+        )} */}
       </div>
     </DashboardLayout>
   );
