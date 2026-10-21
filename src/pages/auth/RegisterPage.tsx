@@ -175,7 +175,7 @@ export default function RegisterPage() {
             </div>
 
             <span className="font-bold text-slate-800 text-lg">
-              AI<span className="text-blue-600">Biz</span>OS
+              AI<span className="text-blue-600">Biz</span>
             </span>
           </Link>
 

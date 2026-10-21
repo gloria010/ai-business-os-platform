@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -36,7 +37,7 @@ const businessLinks: NavLink[] = [
   { href: '/business/inventory', icon: ClipboardList, label: 'Employees' },  
   //{ href: '/business/customers', icon: Users, label: 'Customers' },
   { href: '/business/messages', icon: MessageSquare, label: 'Messages' },
-  //{ href: '/business/notifications', icon: Bell, label: 'Notifications', badge: false },
+  { href: '/business/notifications', icon: Bell, label: 'Notifications', badge: true },
   { href: '/business/analytics', icon: BarChart2, label: 'Analytics' },
   { href: '/business/insights', icon: Lightbulb, label: 'AI Insights' },
 ];
@@ -57,13 +58,58 @@ const adminLinks: NavLink[] = [
 // Anything not listed here is shown to everyone the base link-set already includes.
 const BUSINESSES_ALLOWED = ['business_owner', 'employee', 'admin'];
 const ADMIN_ONLY_PREFIXES = ['/admin'];
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Sidebar({ role = 'consumer', isOpen = true, onClose }: SidebarProps) {
   const { state, dispatch } = useApp();
   const location = useLocation();
+  const [businessUnreadCount, setBusinessUnreadCount] = useState(0);
   const actualRole = state.user?.role; // the REAL logged-in role, from session/login
 //db part
   console.log('SIDEBAR DEBUG — actualRole:', actualRole, 'full user:', state.user);
+  const seenKey = state.user ? `business-notifications-seen-${state.user.id}` : null;
+  const viewingBusinessNotifications = location.pathname === '/business/notifications';
+
+  useEffect(() => {
+    if (role !== 'business' || !seenKey) {
+      setBusinessUnreadCount(0);
+      return;
+    }
+
+    let cancelled = false;
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/ceo/notifications`, { credentials: 'include' });
+        const data = await response.json();
+        const messages = Array.isArray(data?.notifications) ? data.notifications : [];
+        if (cancelled) return;
+
+        const newestId = messages.reduce((latest: number, message: { id?: string | number }) =>
+          Math.max(latest, Number(message.id) || 0), 0);
+
+        if (viewingBusinessNotifications) {
+          if (newestId > 0) localStorage.setItem(seenKey, String(newestId));
+          setBusinessUnreadCount(0);
+          return;
+        }
+
+        const lastSeenId = Number(localStorage.getItem(seenKey)) || 0;
+        setBusinessUnreadCount(messages.filter((message: { id?: string | number }) =>
+          (Number(message.id) || 0) > lastSeenId).length);
+      } catch {
+        if (!cancelled) setBusinessUnreadCount(0);
+      }
+    };
+
+    loadNotifications();
+    const interval = viewingBusinessNotifications ? undefined : window.setInterval(loadNotifications, 30000);
+
+    return () => {
+      cancelled = true;
+      if (interval !== undefined) window.clearInterval(interval);
+    };
+  }, [role, seenKey, viewingBusinessNotifications]);
+
   const baseLinks = role === 'business' ? businessLinks : role === 'admin' ? adminLinks : consumerLinks;
 
   // Safety filter: even if a page passes the wrong `role` prop, links are
@@ -121,14 +167,15 @@ export default function Sidebar({ role = 'consumer', isOpen = true, onClose }: S
           {links.map(link => {
             const active = location.pathname === link.href;
             const Icon = link.icon;
-            const showBadge = link.badge && unreadNotifs > 0;
+            const notificationCount = link.href === '/business/notifications' ? businessUnreadCount : unreadNotifs;
+            const showBadge = link.badge && notificationCount > 0;
             return (
               <Link key={link.href} to={link.href} onClick={onClose}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group relative ${active ? `bg-gradient-to-r ${roleColors[role]} text-white shadow-md` : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'}`}>
                 <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`} />
                 <span className="flex-1">{link.label}</span>
                 {showBadge && (
-                  <span className={`w-5 h-5 text-[10px] font-bold rounded-full flex items-center justify-center ${active ? 'bg-white/30 text-white' : 'bg-red-500 text-white'}`}>{unreadNotifs}</span>
+                  <span className={`w-5 h-5 text-[10px] font-bold rounded-full flex items-center justify-center ${active ? 'bg-white/30 text-white' : 'bg-red-500 text-white'}`}>{notificationCount}</span>
                 )}
               </Link>
             );

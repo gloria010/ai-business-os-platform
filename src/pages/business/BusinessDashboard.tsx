@@ -164,7 +164,7 @@ fetch(`${API_BASE}/api/ceo/reports/monthly-sales`, { credentials: 'include' }), 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard label="Revenue this month" value={`$${(stats.revenue / 1000).toFixed(1)}K`}
           change={Math.round(insights.sales.salesGrowth)} icon={<DollarSign className="w-5 h-5" />} color="green" />
-        <StatCard label="Total Orders" value={stats.orders} icon={<ShoppingBag className="w-5 h-5" />} color="blue" />
+        <StatCard label="Notification" value={stats.orders} icon={<ShoppingBag className="w-5 h-5" />} color="blue" />
         <StatCard label="Products" value={stats.products} icon={<Package className="w-5 h-5" />} color="orange" />
       </div>
 

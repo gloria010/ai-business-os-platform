@@ -726,14 +726,14 @@ export default function Employee() {
                       <p className="text-gray-500 text-sm">Department</p>
                       <h3 className="font-bold text-lg mt-1">{profile.department}</h3>
                     </div>
-                    <div className="rounded-2xl bg-purple-50 p-5">
+                    {/* <div className="rounded-2xl bg-purple-50 p-5">
                       <p className="text-gray-500 text-sm">Manager</p>
                       <h3 className="font-bold text-lg mt-1">{profile.manager}</h3>
                     </div>
                     <div className="rounded-2xl bg-orange-50 p-5">
                       <p className="text-gray-500 text-sm">Joining Date</p>
                       <h3 className="font-bold text-lg mt-1">{profile.joining_date}</h3>
-                    </div>
+                    </div> */}
                   </div>
                 ) : (
                   <p className="text-gray-400 text-center py-8">No profile data available.</p>
@@ -872,14 +872,14 @@ export default function Employee() {
                           <p className="text-gray-500 text-sm">Department</p>
                           <h3 className="font-semibold mt-2">{profile.department}</h3>
                         </div>
-                        <div className="bg-gray-50 rounded-2xl p-5">
+                        {/* <div className="bg-gray-50 rounded-2xl p-5">
                           <p className="text-gray-500 text-sm">Manager</p>
                           <h3 className="font-semibold mt-2">{profile.manager}</h3>
                         </div>
                         <div className="bg-gray-50 rounded-2xl p-5">
                           <p className="text-gray-500 text-sm">Joining Date</p>
                           <h3 className="font-semibold mt-2">{profile.joining_date}</h3>
-                        </div>
+                        </div> */}
                         <div className="bg-gray-50 rounded-2xl p-5">
                           <p className="text-gray-500 text-sm">Monthly Salary</p>
                           <h3 className="font-semibold mt-2 text-green-600">{profile.salary}</h3>

@@ -89,10 +89,10 @@ export default function Navbar() {
                     <ShoppingCart className="w-4 h-4" />
                     {cartCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{cartCount}</span>}
                   </Link>
-                  <Link to="/notifications" className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors relative ${transparent ? 'text-white hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
+                  {/* <Link to="/notifications" className={`w-9 h-9 flex items-center justify-center rounded-xl transition-colors relative ${transparent ? 'text-white hover:bg-white/10' : 'text-slate-500 hover:bg-slate-100'}`}>
                     <Bell className="w-4 h-4" />
                     {unreadNotifs > 0 && <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadNotifs}</span>}
-                  </Link>
+                  </Link> */}
                   <Link to="/dashboard" className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-slate-100 transition-colors group">
                   <span className={`text-sm font-medium hidden xl:block transition-colors ${transparent ? 'text-white group-hover:text-slate-800' : 'text-slate-700'}`}>
                   {state.user?.name}

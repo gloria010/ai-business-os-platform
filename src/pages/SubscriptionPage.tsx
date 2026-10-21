@@ -11,7 +11,7 @@ export default function SubscriptionPage() {
     {
       name: 'Starter',
       price: '₹0',
-      period: '/month',
+      period: '/Year',
       icon: <Check className="w-6 h-6 text-green-600" />,
       color: 'border-slate-200',
       button: 'Get Started',
@@ -19,7 +19,7 @@ export default function SubscriptionPage() {
         'bg-slate-800 hover:bg-slate-900 text-white',
       features: [
         '1 Business Workspace',
-        'Up to 5 Employees',
+        'Up to 25 Employees',
         'HR Dashboard',
         'Sales Dashboard',
         'Basic Reports',
@@ -30,7 +30,7 @@ export default function SubscriptionPage() {
     {
       name: 'Professional',
       price: '₹999',
-      period: '/month',
+      period: '/Year',
       popular: true,
       icon: <Star className="w-6 h-6 text-yellow-500" />,
       color: 'border-blue-600',
@@ -52,7 +52,7 @@ export default function SubscriptionPage() {
     {
       name: 'Enterprise',
       price: '₹2999',
-      period: '/month',
+      period: '/Year',
       icon: <Crown className="w-6 h-6 text-purple-600" />,
       color: 'border-purple-600',
       button: 'Choose Enterprise',
@@ -215,7 +215,7 @@ export default function SubscriptionPage() {
 
                 {[
                   ['Business Workspace', '1', '1', 'Unlimited'],
-                  ['Employees', '5', '50', 'Unlimited'],
+                  ['Employees', '25', '50', 'Unlimited'],
                   ['HR Module', '✓', '✓', '✓'],
                   ['Sales Module', '✓', '✓', '✓'],
                   ['Inventory Management', '—', '✓', '✓'],

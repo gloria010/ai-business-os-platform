@@ -124,7 +124,7 @@ export default function ConsumerDashboard() {
         <div className="relative">
           <h2 className="text-white text-xl font-bold mb-1">Welcome back, {state.user?.name.split(' ')[0]}!</h2>
           <p className="text-blue-200 text-sm">
-            You have {stats.unreadNotifications} unread notifications and {stats.cartItems} items in your cart.
+            You have  {stats.cartItems} items in your cart.
           </p>
         </div>
         <img src={state.user?.avatar} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 hidden sm:block relative" />

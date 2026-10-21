@@ -124,10 +124,10 @@ export default function LandingPage() {
                 <Button size="lg" onClick={() => navigate('/register')} icon={<ArrowRight className="w-4 h-4" />} iconPosition="right">
                   Get Started Free
                 </Button>
-                <Button variant="outline" size="lg" onClick={() => navigate('/businesses')}
+                {/* <Button variant="outline" size="lg" onClick={() => navigate('/businesses')}
                   className="border-white/30 text-white hover:bg-white/10 hover:text-white" icon={<Play className="w-4 h-4" />}>
                   Watch Demo
-                </Button>
+                </Button> */}
               </motion.div>
 
               {/* Trust indicators */}
